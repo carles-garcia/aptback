@@ -110,22 +110,7 @@ void get_command(char *line, struct action *current) {
 	current->command = malloc((strlen(line)+1) * sizeof(char)); //will free when exiting program
 	strcpy(current->command, line); 
 }
-/*
-Start-Date: 2015-09-09  14:27:34
-Commandline: apt-get install bin86
-Install: bin86:i386 (0.16.17-3.1ubuntu3)
-End-Date: 2015-09-09  14:27:34
 
-Start-Date: 2015-09-09  14:32:30
-Commandline: apt-get install bochs
-Install: bochs-wx:i386 (2.4.6-6, automatic), bximage:i386 (2.4.6-6, automatic), bochsbios:i386 (2.4.6-6, automatic), libwxbase2.8-0:i386 (2.8.12.1+dfsg-2ubuntu2, automatic), libwxgtk2.8-0:i386 (2.8.12.1+dfsg-2ubuntu2, automatic), vgabios:i386 (0.7a-3ubuntu2, automatic), bochs:i386 (2.4.6-6)
-End-Date: 2015-09-09  14:32:32
-
-Start-Date: 2015-09-09  14:48:37
-Commandline: apt-get remove bochs
-Remove: bochs-wx:i386 (2.4.6-6), bochs:i386 (2.4.6-6)
-End-Date: 2015-09-09  14:48:37
-*/
 void get_packages(line, current) {
 	while (*line++ != ' '); //pass space
 	while (1) {
