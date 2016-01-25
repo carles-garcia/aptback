@@ -16,9 +16,9 @@ int main() {
   
   struct action *current = NULL;
   char *line = NULL;  
-  while (getline(&my_string, 0, source) > 0) {
-    evaluate_line(my_string, current, actions, &num_act);
-    free(my_string);
+  while (getline(&line, 0, source) > 0) {
+    evaluate_line(line, current, actions, &num_act);
+    free(line);
   }
   
   if (fclose(source) != 0) eperror(filename);

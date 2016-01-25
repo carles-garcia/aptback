@@ -1,13 +1,14 @@
-
+#include "log_parse.h"
   
 void evaluate_line(char *line, struct action *current, struct action **actions, int *num_act) {
-	if (starts_with(line, "Start-Date") { 
-		current = struct action *new_action;
+	if (starts_with(line, "Start-Date")) {
+		struct action *new_action;
 		init_action(new_action);
 		// add new_action to array of actions
-		actions = realloc(actions, num_act * sizeof(struct action *))
+		actions = realloc(actions, *num_act * sizeof(struct action *));
 		actions[*num_act] = new_action;
 		++(*num_act);
+		current = new_action;
 		get_date(line, current->start_date);
 	}
 	else if (starts_with(line, "Commandline")) { //not all actions have one 
@@ -83,7 +84,7 @@ void get_command(char *line, struct action *current) {
 	strcpy(current->command, line); 
 }
 
-void get_packages(line, current) {
+void get_packages(char *line, struct action *current) {
 	while (*line++ != ' '); //pass space
 	while (1) {
 		struct package new_pack;
@@ -115,17 +116,17 @@ void get_packages(line, current) {
 			++c; //number of chars in version
 			++line_aux;
 		}
-		if (*line_aux == ',') new_pack.automatic = true;
-		else new_pack.automatic = false;
+		if (*line_aux == ',') new_pack.automatic = 1;
+		else new_pack.automatic = 0;
 		new_pack.version = malloc((c+1) * sizeof(char));
 		for (i = 0; i < c; ++i) {
 			new_pack.version[i] = line[i];
 		}
 		//package finished
 		//add package to action list here
-		current->packages = realloc(current->packages, num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
+		current->packages = realloc(current->packages, current->num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
 		// which is the number of packages in the line and do only one big malloc
-		current->packages[current->num_pack] = new_pack;
+		current->packages[current->num_pack] = &new_pack;
 		current->num_pack += 1;
 		
 		line = line_aux;

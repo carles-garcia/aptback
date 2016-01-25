@@ -1,4 +1,6 @@
-
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 
 struct date {
   int year;
@@ -7,7 +9,7 @@ struct date {
   int hour;
   int minute;
   int second;
-}
+};
 
 enum action_type { INSTALL, REMOVE };
 
@@ -16,7 +18,7 @@ struct package {
   char *arch;
   char *version;
   int automatic;
-}	
+};	
 
 struct action {
   struct date start_date;
@@ -25,10 +27,10 @@ struct action {
   struct package **packages;
   int num_pack;
   struct date end_date;
-}
+};
 
 
-void evaluate_line(char *line, struct action *current, struct action actions[], int *num_act);
+void evaluate_line(char *line, struct action *current, struct action **actions, int *num_act);
 
 int starts_with(char *line, char *string);
 
@@ -36,6 +38,6 @@ void get_date(char *line, struct date dat);
 
 void get_command(char *line, struct action *current);
 
-void get_packages(line, current);
+void get_packages(char *line, struct action *current);
 
 void init_action(struct action *current);
