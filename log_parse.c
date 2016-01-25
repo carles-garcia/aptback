@@ -1,57 +1,13 @@
 
-struct date {
-	int year;
-	int month;
-	int day;
-	int hour;
-	int minute;
-	int second;
-}
-
-enum action_type { INSTALL, REMOVE };
-
-struct package {
-	char *name;
-	char *arch;
-	char *version;
-	int automatic;
-}	
-	
-struct action {
-	struct date start_date;
-	char *command;
-	enum action_type type;
-	struct package **packages;
-	int num_pack;
-	struct date end_date;
-}
-	
-	
-
-
-int main() {
   
-  char *filename = NULL;
-  FILE *source;
-  if ((source = fopen(filename, "r")) == NULL) 
-    eperror(filename);
-
-  struct action *current = NULL;
-  char *line = NULL;  
-  while (getline(&my_string, 0, source) > 0) {
-    evaluate_line(my_string, current);
-    free(my_string);
-  }
-
-  if (fclose(source) != 0) eperror(filename);
-  
-}
-  
-void evaluate_line(char *line, struct action *current) {
+void evaluate_line(char *line, struct action *current, struct action **actions, int *num_act) {
 	if (starts_with(line, "Start-Date") { 
 		current = struct action *new_action;
 		init_action(new_action);
 		// add new_action to array of actions
+		actions = realloc(actions, num_act * sizeof(struct action *))
+		actions[*num_act] = new_action;
+		++(*num_act);
 		get_date(line, current->start_date);
 	}
 	else if (starts_with(line, "Commandline")) { //not all actions have one 
@@ -167,10 +123,10 @@ void get_packages(line, current) {
 		}
 		//package finished
 		//add package to action list here
-		current->num_pack += 1;
 		current->packages = realloc(current->packages, num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
 		// which is the number of packages in the line and do only one big malloc
-		current->packages[current->num_pack-1] = new_pack;
+		current->packages[current->num_pack] = new_pack;
+		current->num_pack += 1;
 		
 		line = line_aux;
 		++line; // now it's either in ' ' or in ',' or end
