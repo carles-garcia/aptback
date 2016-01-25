@@ -29,13 +29,29 @@ struct action {
 	
 
 
-//for each line
-evaluate_line(char *line, NULL);
+int main() {
+  
+  char *filename = NULL;
+  FILE *source;
+  if ((source = fopen(filename, "r")) == NULL) 
+    eperror(filename);
 
+  struct action *current = NULL;
+  char *line = NULL;  
+  while (getline(&my_string, 0, source) > 0) {
+    evaluate_line(my_string, current);
+    free(my_string);
+  }
+
+  if (fclose(source) != 0) eperror(filename);
+  
+}
+  
 void evaluate_line(char *line, struct action *current) {
 	if (starts_with(line, "Start-Date") { 
 		current = struct action *new_action;
 		init_action(new_action);
+		// add new_action to array of actions
 		get_date(line, current->start_date);
 	}
 	else if (starts_with(line, "Commandline")) { //not all actions have one 
