@@ -5,7 +5,7 @@
 
 int main() {
   
-  char *filename = "hist.txt";
+  char *filename = "ignore/hist.txt";
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
     perror(filename);
@@ -18,14 +18,15 @@ int main() {
   struct action *current = NULL;
   char *line = NULL;  
   size_t n = 0;
-  while (getline(&line, &n, source) >= 0) {
+  while (getline(&line, &n, source) > 0) { // or >= ???
     evaluate_line(line, &current, actions, &num_act);
-    //free(line);
+    free(line);
+    line = NULL;  
   }
   
   if (fclose(source) != 0) perror(filename);
   int i;
-  for (i = 0; i < 3; ++i) {
+  for (i = 0; i < num_act; ++i) {
     int j;
     for (j = 0; j < (*actions)[i]->num_pack; ++j) {
       printf((*actions)[i]->packages[j]->name);

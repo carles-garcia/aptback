@@ -29,9 +29,8 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 	else if (starts_with(line, "End-Date")) {
 		get_date(line, (*current)->end_date);
 	}
-	else if (*line != '\n') {
-	  printf("error\n");
-	 // exit(EXIT_FAILURE); //ERROR
+	else if (!isspace(*line) && *line != '\0') {
+	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated
 	}
 }
 
@@ -107,6 +106,7 @@ void get_packages(char *line, struct action *current) {
 		for (i = 0; i < c; ++i) {
 		  new_pack->name[i] = line[i];
 		}
+		new_pack->name[i] = '\0';
 		line = line_aux;
 		c = 0;
 		while (*line_aux != ' ') {
@@ -119,6 +119,7 @@ void get_packages(char *line, struct action *current) {
 		for (i = 0; i < c; ++i) {
 		  new_pack->arch[i] = line[i];
 		}
+		new_pack->arch[i] = '\0';
 		while (*line_aux != ',' && *line_aux != ')') {
 			++c; //number of chars in version
 			++line_aux;
