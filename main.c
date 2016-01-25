@@ -5,22 +5,33 @@
 
 int main() {
   
-  char *filename = NULL;
+  char *filename = "hist.txt";
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
-    eperror(filename);
+    perror(filename);
   
-  struct action **actions;
-  actions = malloc(0 * sizeof(struct action *));
+  struct action ***actions;
+  actions = malloc(sizeof(struct action *));
+  *actions = malloc(0 * sizeof(struct action *));
   int num_act = 0;
   
   struct action *current = NULL;
   char *line = NULL;  
-  while (getline(&line, 0, source) > 0) {
-    evaluate_line(line, current, actions, &num_act);
-    free(line);
+  size_t n = 0;
+  while (getline(&line, &n, source) >= 0) {
+    evaluate_line(line, &current, actions, &num_act);
+    //free(line);
   }
   
-  if (fclose(source) != 0) eperror(filename);
+  if (fclose(source) != 0) perror(filename);
+  int i;
+  for (i = 0; i < 3; ++i) {
+    int j;
+    for (j = 0; j < (*actions)[i]->num_pack; ++j) {
+      printf((*actions)[i]->packages[j]->name);
+      printf("\n");
+    }
+  }
+  return 0;
   
 }

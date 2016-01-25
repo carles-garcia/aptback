@@ -11,7 +11,7 @@ struct date {
   int second;
 };
 
-enum action_type { INSTALL, REMOVE };
+enum action_type { INSTALL, REMOVE, UPGRADE };
 
 struct package {
   char *name;
@@ -30,7 +30,7 @@ struct action {
 };
 
 
-void evaluate_line(char *line, struct action *current, struct action **actions, int *num_act);
+void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act);
 
 int starts_with(char *line, char *string);
 

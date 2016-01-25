@@ -1,41 +1,48 @@
 #include "log_parse.h"
-  
-void evaluate_line(char *line, struct action *current, struct action **actions, int *num_act) {
+#include "stdio.h" 
+void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act) {
 	if (starts_with(line, "Start-Date")) {
-		struct action *new_action;
+		struct action *new_action = malloc(sizeof(struct action));
 		init_action(new_action);
 		// add new_action to array of actions
-		actions = realloc(actions, *num_act * sizeof(struct action *));
-		actions[*num_act] = new_action;
 		++(*num_act);
-		current = new_action;
-		get_date(line, current->start_date);
+		*actions = realloc(*actions, *num_act * sizeof(struct action *));
+		(*actions)[*num_act-1] = new_action;
+		*current = new_action;
+		get_date(line, (*current)->start_date);
 	}
 	else if (starts_with(line, "Commandline")) { //not all actions have one 
-		get_command(line, current);
+		get_command(line, *current);
 	}
 	else if (starts_with(line, "Install")) { //not all actions have one
-		current->type = INSTALL;
-		get_packages(line, current);
+		(*current)->type = INSTALL;
+		get_packages(line, *current);
 	}
 	else if (starts_with(line, "Remove")) { //not all actions have one
-		current->type = REMOVE;
-		get_packages(line, current);
+		(*current)->type = REMOVE;
+		get_packages(line, *current);
 	}
-	else if (starts_with(line, "End_Date")) {
-		get_date(line, current->end_date);
+	else if (starts_with(line, "Upgrade")) {
+		(*current)->type = UPGRADE;
+		get_packages(line, *current);
 	}
-	else if (*line != '\n') exit(EXIT_FAILURE); //ERROR
+	else if (starts_with(line, "End-Date")) {
+		get_date(line, (*current)->end_date);
+	}
+	else if (*line != '\n') {
+	  printf("error\n");
+	 // exit(EXIT_FAILURE); //ERROR
+	}
 }
 
 int starts_with(char *line, char *string) {
 	// line should never be NULL
 	while (1) {
-		if (!isalpha(*line)) {
+		if (!isalpha(*line) && *line != '-') {
 			if (*string == '\0') return 1;
 			else return 0;
 		}
-		else if (!isalpha(*string)) return 0;
+		else if (!isalpha(*string) && *string != '-') return 0;
 		else if (*line++ != *string++) return 0;
 	}
 }
@@ -87,7 +94,7 @@ void get_command(char *line, struct action *current) {
 void get_packages(char *line, struct action *current) {
 	while (*line++ != ' '); //pass space
 	while (1) {
-		struct package new_pack;
+		struct package *new_pack = malloc(sizeof(struct package));
 		char *line_aux = line;
 		int c = 0;
 		while (*line_aux != ':') {
@@ -95,10 +102,10 @@ void get_packages(char *line, struct action *current) {
 			++line_aux;
 		}
 		++line_aux;
-		new_pack.name = malloc((c+1) * sizeof(char));
+		new_pack->name = malloc((c+1) * sizeof(char));
 		int i;
 		for (i = 0; i < c; ++i) {
-			new_pack.name[i] = line[i];
+		  new_pack->name[i] = line[i];
 		}
 		line = line_aux;
 		c = 0;
@@ -108,26 +115,27 @@ void get_packages(char *line, struct action *current) {
 		}
 		++line_aux;
 		++line_aux; //now we are at version
-		new_pack.arch = malloc((c+1) * sizeof(char));
+		new_pack->arch = malloc((c+1) * sizeof(char));
 		for (i = 0; i < c; ++i) {
-			new_pack.arch[i] = line[i];
+		  new_pack->arch[i] = line[i];
 		}
 		while (*line_aux != ',' && *line_aux != ')') {
 			++c; //number of chars in version
 			++line_aux;
 		}
-		if (*line_aux == ',') new_pack.automatic = 1;
-		else new_pack.automatic = 0;
-		new_pack.version = malloc((c+1) * sizeof(char));
+		if (*line_aux == ',') new_pack->automatic = 1;
+		else new_pack->automatic = 0;
+		new_pack->version = malloc((c+1) * sizeof(char));
 		for (i = 0; i < c; ++i) {
-			new_pack.version[i] = line[i];
+		  new_pack->version[i] = line[i];
 		}
 		//package finished
 		//add package to action list here
+		current->num_pack += 1;
 		current->packages = realloc(current->packages, current->num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
 		// which is the number of packages in the line and do only one big malloc
-		current->packages[current->num_pack] = &new_pack;
-		current->num_pack += 1;
+		current->packages[current->num_pack-1] = new_pack;
+		
 		
 		line = line_aux;
 		++line; // now it's either in ' ' or in ',' or end
