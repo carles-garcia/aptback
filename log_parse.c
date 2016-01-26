@@ -94,6 +94,7 @@ void get_packages(char *line, struct action *current) {
 	while (*line++ != ' '); //pass space
 	while (1) {
 		struct package *new_pack = malloc(sizeof(struct package));
+		init_pack(new_pack);
 		char *line_aux = line;
 		int c = 0;
 		while (*line_aux != ':') {
@@ -120,16 +121,35 @@ void get_packages(char *line, struct action *current) {
 		  new_pack->arch[i] = line[i];
 		}
 		new_pack->arch[i] = '\0';
+		line = line_aux;
+		c = 0;
 		while (*line_aux != ',' && *line_aux != ')') {
 			++c; //number of chars in version
 			++line_aux;
 		}
-		if (*line_aux == ',') new_pack->automatic = 1;
+		if (current->type == INSTALL && *line_aux == ',') new_pack->automatic = 1;
 		else new_pack->automatic = 0;
 		new_pack->version = malloc((c+1) * sizeof(char));
 		for (i = 0; i < c; ++i) {
 		  new_pack->version[i] = line[i];
 		}
+		new_pack->version[i] = '\0';
+		if (current->type == UPGRADE && *line_aux == ',') {
+		  ++line_aux;
+		  ++line_aux;
+		  line = line_aux;
+		  c = 0;
+		  while (*line_aux != ')') {
+		    ++c; //number of chars in version
+		    ++line_aux;
+		  }
+		  new_pack->newversion = malloc((c+1) * sizeof(char));
+		  for (i = 0; i < c; ++i) {
+		    new_pack->newversion[i] = line[i];
+		  }
+		  new_pack->newversion[i] = '\0';
+		}
+		  
 		//package finished
 		//add package to action list here
 		current->num_pack += 1;
@@ -155,4 +175,12 @@ void init_action(struct action *current) {
 	current->command = NULL;
 	current->packages = malloc(0 * sizeof(struct package *));
 	current->num_pack = 0;
+}
+
+void init_pack(struct package *pack) {
+  pack->name = NULL;
+  pack->arch = NULL;
+  pack->version = NULL;
+  pack->newversion = NULL;
+  pack->automatic = 0;
 }

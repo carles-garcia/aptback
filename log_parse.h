@@ -17,7 +17,8 @@ struct package {
   char *name;
   char *arch;
   char *version;
-  int automatic;
+  char *newversion; // Only for UPGRADE
+  int automatic; // Only for INSTALL
 };	
 
 struct action {
@@ -41,3 +42,5 @@ void get_command(char *line, struct action *current);
 void get_packages(char *line, struct action *current);
 
 void init_action(struct action *current);
+
+void init_pack(struct package *pack);
