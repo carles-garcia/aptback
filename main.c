@@ -77,47 +77,38 @@ int parse_date(char *arg, struct date *dat) {
 int parse_option(char *arg, struct arguments *arguments) {
   arguments->installed = arguments->removed = arguments->upgraded = 0;
   char *aux = arg;
-  char first[20], second[20]; // temporary, count chars
-  int i = 0;
-  while (isalpha(*aux)) {
-    first[i] = *aux;
-    ++i;
-    ++aux;
-  }
-  first[i] = '\0';
-  if (strcmp("installed", first) == 0) arguments->installed = 1;
-  if (strcmp("removed", first) == 0) arguments->removed = 1;
-  if (strcmp("upgraded", first) == 0) arguments->upgraded = 1;
-  if (*aux == ',') {
-    ++aux;
-    i = 0;
+  int c;
+  while (1) {
+    c = 0;
     while (isalpha(*aux)) {
-      second[i] = *aux;
-      ++i;
       ++aux;
+      ++c;
     }
-    second[i] = '\0';
-    if (strcmp("installed", second) == 0) arguments->installed = 1;
-    if (strcmp("removed", second) == 0) arguments->removed = 1;
-    if (strcmp("upgraded", second) == 0) arguments->upgraded = 1;
+    char *buffer = malloc((c+1) * sizeof(char));
+    int i;
+    for (i = 0; i < c; ++i) buffer[i] = arg[i];
+    buffer[i] = '\0';
+    if (strcmp("installed", buffer) == 0) arguments->installed = 1;
+    else if (strcmp("removed", buffer) == 0) arguments->removed = 1;
+    else if (strcmp("upgraded", buffer) == 0) arguments->upgraded = 1;
+    else {
+      free(buffer);
+      return 0;
+    }
+    free(buffer);
+    if (*aux == '\0') break;
+    else if (*aux != ',') return 0;
+    ++aux;
+    arg = aux;
   }
-  if (*aux != '\0') return 0;
   return 1;
 }
-  
-  
-  
-  
-  
-}
-  
   
   
 /* aptback remove -o installed,upgraded -d 2015-11-09-17-54-22 -u 2015-12-19
  * date format: 2015-11-09-17-54-22
  * minimum input is year. Then others wil be auto completed.*/
-static error_t parse_opt(int key, char *arg, struct argp_state *state)
-{
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   struct arguments *arguments = state->input;
   switch (key)
   {
@@ -137,17 +128,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       else argp_usage(state);
       break;
     case ARGP_KEY_END:
-      if (state->arg_num < 1) argp_usage(state);
-      arguments->arg_num = state->arg_num;
+      if (state->arg_num != 1) argp_usage(state);
       break;
     default:
       return ARGP_ERR_UNKNOWN;
+  }
   return 0;
 }
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
-int main() {
+int main(int argc, char *argv[]) {
+  struct arguments args;
+  argp_parse(&argp, argc, argv, 0, 0, &args);
   
   char *filename = "ignore/hist.txt";
   FILE *source;

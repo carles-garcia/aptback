@@ -27,7 +27,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		// add new_action to array of actions. If we do it at the end we can be mostly sure that it's a valid action
 		++(*num_act);
 		*actions = realloc(*actions, *num_act * sizeof(struct action *));
-		(*actions)[*num_act-1] = current;
+		(*actions)[*num_act-1] = *current;
 		get_date(line, (*current)->end_date);
 	}
 	else if (!isspace(*line) && *line != '\0') {
