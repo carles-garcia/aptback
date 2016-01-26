@@ -12,7 +12,7 @@ static char doc[] =
 static char args_doc[] = "install|remove|upgrade|search";
 
 static struct argp_option options[] = {
-  {"date"	'd', "DATE", 0, "Select packages in a date" },
+  {"date",	'd', "DATE", 0, "Select packages in a date" },
   {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
   {"option",   	'o', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
   { 0 }
@@ -74,11 +74,46 @@ int parse_date(char *arg, struct date *dat) {
   return 0;
 }
 
+int parse_option(char *arg, struct arguments *arguments) {
+  arguments->installed = arguments->removed = arguments->upgraded = 0;
+  char *aux = arg;
+  char first[20], second[20]; // temporary, count chars
+  int i = 0;
+  while (isalpha(*aux)) {
+    first[i] = *aux;
+    ++i;
+    ++aux;
+  }
+  first[i] = '\0';
+  if (strcmp("installed", first) == 0) arguments->installed = 1;
+  if (strcmp("removed", first) == 0) arguments->removed = 1;
+  if (strcmp("upgraded", first) == 0) arguments->upgraded = 1;
+  if (*aux == ',') {
+    ++aux;
+    i = 0;
+    while (isalpha(*aux)) {
+      second[i] = *aux;
+      ++i;
+      ++aux;
+    }
+    second[i] = '\0';
+    if (strcmp("installed", second) == 0) arguments->installed = 1;
+    if (strcmp("removed", second) == 0) arguments->removed = 1;
+    if (strcmp("upgraded", second) == 0) arguments->upgraded = 1;
+  }
+  if (*aux != '\0') return 0;
+  return 1;
+}
   
   
   
   
-/* aptback remove --option installed,upgraded --date 2015-11-09-17-54-22 --until 2015-12-19
+  
+}
+  
+  
+  
+/* aptback remove -o installed,upgraded -d 2015-11-09-17-54-22 -u 2015-12-19
  * date format: 2015-11-09-17-54-22
  * minimum input is year. Then others wil be auto completed.*/
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
@@ -93,13 +128,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       if (!parse_date(arg, &arguments->until)) argp_usage(state);
       break;
     case 'o':
+      if (!parse_option(arg, arguments)) argp_usage(state);
+      break;
+    case ARGP_KEY_ARG:
       if (strcmp(arg, "remove") == 0) arguments->command = REMOVE;
       else if (strcmp(arg, "install") == 0) arguments->command = INSTALL;
       else if (strcmp(arg, "upgrade") == 0) arguments->command = UPGRADE;
       else argp_usage(state);
-      break;
-    case ARGP_KEY_ARG:
-      arguments->action = arg;
       break;
     case ARGP_KEY_END:
       if (state->arg_num < 1) argp_usage(state);
