@@ -173,10 +173,12 @@ void get_packages(char *line, struct action *current) {
 }
 
 void init_action(struct action *current) {
+	memset(&current->start_date, 0, sizeof(struct date));
 	current->command = NULL;
 	current->type = UNDEFINED;
 	current->packages = malloc(0 * sizeof(struct package *));
 	current->num_pack = 0;
+	memset(&current->end_date, 0, sizeof(struct date));
 }
 
 void init_pack(struct package *pack) {
