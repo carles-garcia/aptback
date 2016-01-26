@@ -11,7 +11,7 @@ struct date {
   int second;
 };
 
-enum action_type { INSTALL, REMOVE, UPGRADE };
+enum action_type { INSTALL, REMOVE, UPGRADE, UNDEFINED };
 
 struct package {
   char *name;

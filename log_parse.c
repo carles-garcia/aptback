@@ -1,13 +1,10 @@
 #include "log_parse.h"
 #include "stdio.h" 
+
 void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act) {
 	if (starts_with(line, "Start-Date")) {
 		struct action *new_action = malloc(sizeof(struct action));
 		init_action(new_action);
-		// add new_action to array of actions
-		++(*num_act);
-		*actions = realloc(*actions, *num_act * sizeof(struct action *));
-		(*actions)[*num_act-1] = new_action;
 		*current = new_action;
 		get_date(line, (*current)->start_date);
 	}
@@ -27,6 +24,10 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		get_packages(line, *current);
 	}
 	else if (starts_with(line, "End-Date")) {
+		// add new_action to array of actions. If we do it at the end we can be mostly sure that it's a valid action
+		++(*num_act);
+		*actions = realloc(*actions, *num_act * sizeof(struct action *));
+		(*actions)[*num_act-1] = current;
 		get_date(line, (*current)->end_date);
 	}
 	else if (!isspace(*line) && *line != '\0') {
@@ -173,6 +174,7 @@ void get_packages(char *line, struct action *current) {
 
 void init_action(struct action *current) {
 	current->command = NULL;
+	current->type = UNDEFINED;
 	current->packages = malloc(0 * sizeof(struct package *));
 	current->num_pack = 0;
 }
