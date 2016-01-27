@@ -173,8 +173,11 @@ int main(int argc, char *argv[]) {
   *selected = malloc(0 * sizeof(struct action *));
   int num_sel = selection(args, *actions, num_act, selected);
   
-  //printf("%d\n",num_act);
-  debug_actions(*actions, num_act);
+  // at this point some actions have been freed
+  // DON'T USE ***actions AGAIN
+  
+  printf("%d\n",num_sel);
+  //debug_actions(*selected, num_sel);
   //debug_args(args);
   
   return 0;
