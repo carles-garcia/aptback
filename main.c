@@ -3,6 +3,7 @@
 #include <argp.h>
 #include "log_parse.h"
 #include "debug.h"
+#include "selection.h"
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -147,7 +148,6 @@ int main(int argc, char *argv[]) {
   init_args(&args);
   argp_parse(&argp, argc, argv, 0, 0, &args);
   
-  
   char *filename = "ignore/hist.txt";
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
@@ -171,10 +171,11 @@ int main(int argc, char *argv[]) {
   struct action ***selected;
   selected = malloc(sizeof(struct action **));
   *selected = malloc(0 * sizeof(struct action *));
-  int num_sel = select(args, *actions, num_act, selected);
+  int num_sel = selection(args, *actions, num_act, selected);
   
-  //debug_actions(actions, num_act);
-  debug_args(args);
+  //printf("%d\n",num_act);
+  debug_actions(*actions, num_act);
+  //debug_args(args);
   
   return 0;
   

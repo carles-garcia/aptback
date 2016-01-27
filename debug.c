@@ -11,13 +11,13 @@ void debug_args(struct arguments args) {
   if (args.upgraded) printf("-o upgraded\n");
 }
 
-void debug_actions(struct action ***actions, int num_act) {
+void debug_actions(struct action **actions, int num_act) {
   int i;
   for (i = 0; i < num_act; ++i) {
     int j;
-    for (j = 0; j < (*actions)[i]->num_pack; ++j) {
-      printf((*actions)[i]->packages[j]->name);
+    //for (j = 0; j < actions[i]->num_pack; ++j) {
+      printf("%d",actions[i]->start_date.year);
       printf("\n");
-    }
+    //}
   }
 }

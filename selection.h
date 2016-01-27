@@ -1,5 +1,10 @@
 #pragma once
 
 #include "log_parse.h"
+#include <stdio.h>
 
-void select(struct arguments args, struct action **actions, int num_act, struct action ***selected);
+int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected);
+
+int satisfies(struct arguments args, struct action *act);
+
+int datecmp(struct date first, struct date second);

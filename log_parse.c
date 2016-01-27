@@ -7,7 +7,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		struct action *new_action = malloc(sizeof(struct action));
 		init_action(new_action);
 		*current = new_action;
-		get_date(line, (*current)->start_date);
+		get_date(line, &(*current)->start_date);
 	}
 	else if (starts_with(line, "Commandline")) { //not all actions have one 
 		get_command(line, *current);
@@ -20,16 +20,19 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		(*current)->type = REMOVE;
 		get_packages(line, *current);
 	}
-	else if (starts_with(line, "Upgrade")) {
+	else if (starts_with(line, "Upgrade")) { // an actioni can have install and upgrade at the same time
 		(*current)->type = UPGRADE;
 		get_packages(line, *current);
 	}
 	else if (starts_with(line, "End-Date")) {
 		// add new_action to array of actions. If we do it at the end we can be mostly sure that it's a valid action
-		++(*num_act);
-		*actions = realloc(*actions, *num_act * sizeof(struct action *));
-		(*actions)[*num_act-1] = *current;
-		get_date(line, (*current)->end_date);
+		if ((*current)->type != UNDEFINED) {
+		  ++(*num_act);
+		  *actions = realloc(*actions, *num_act * sizeof(struct action *));
+		  (*actions)[*num_act-1] = *current;
+		  get_date(line, &(*current)->end_date);
+		}
+		else free(*current);
 	}
 	else if (!isspace(*line) && *line != '\0') {
 	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated
@@ -48,39 +51,39 @@ int starts_with(char *line, char *string) {
 	}
 }
 
-void get_date(char *line, struct date dat) {
+void get_date(char *line, struct date *dat) {
 	while (*line++ != ' '); //pass space
 	char year[4];
 	int i = 0;
 	while (i < 4) year[i++] = *line++;
-	dat.year = atoi(year);
+	dat->year = atoi(year);
 	++line;
 	char month[2];
 	i = 0;
 	while (i < 2) month[i++] = *line++;
-	dat.month = atoi(month);
+	dat->month = atoi(month);
 	++line;
 	char day[2];
 	i = 0;
 	while (i < 2) day[i++] = *line++;
-	dat.day = atoi(day);
+	dat->day = atoi(day);
 	++line;
 	
 	while (isspace(*line)) ++line;
 	char hour[2];
 	i = 0;
 	while (i < 2) hour[i++] = *line++;
-	dat.hour = atoi(hour);
+	dat->hour = atoi(hour);
 	++line;
 	char minute[2];
 	i = 0;
 	while (i < 2) minute[i++] = *line++;
-	dat.minute = atoi(minute);
+	dat->minute = atoi(minute);
 	++line;
 	char second[2];
 	i = 0;
 	while (i < 2) second[i++] = *line++;
-	dat.second = atoi(second);
+	dat->second = atoi(second);
 	
 }
 		
