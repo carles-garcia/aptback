@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "selection.h"
 #include "mem.h"
+#include <unistd.h>
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -177,6 +178,22 @@ int main(int argc, char *argv[]) {
   // at this point some actions have been freed
   // DON'T USE ***actions AGAIN
   
+  if (args.command == INSTALL) {
+    char *apt_argv[num_sel+2];
+    apt_argv[0] = "apt-get";
+    apt_argv[1] = "install";
+    int k;
+    int n = 2;
+    for (k = 0; k < num_sel; ++k) {
+      int l;
+      for (l = 0; l < (*selected)[k]->num_pack; ++l) {
+	apt_argv[n++] = (*selected)[k]->packages[l]->name;
+      }
+    }
+    //int rc = exec_apt(apt_argv);
+  }
+  
+  
   printf("%d\n",num_sel);
   //debug_actions(*selected, num_sel);
   //debug_args(args);
@@ -196,3 +213,16 @@ int main(int argc, char *argv[]) {
   
 }
 
+int exec_apt(char **argv) {
+  pid_t my_pid;
+  int status;
+  
+  if ((my_pid = fork()) == 0) {
+    if (execve(argv[0], (char **)argv , NULL) == -1) {
+      perror("child process execve failed [%m]");
+      return -1;
+    }
+  }
+  
+  return 0;
+}
