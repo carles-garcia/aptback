@@ -12,7 +12,7 @@ static char doc[] =
 static char args_doc[] = "install|remove|upgrade|search";
 
 static struct argp_option options[] = {
-  {"date",	'd', "DATE", 0, "Select packages in a date" },
+  {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
   {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
   {"option",   	'o', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
   { 0 }
@@ -39,26 +39,33 @@ int parse_date(char *arg, struct date *dat) {
       ++c;
     }
     if (c > 0) {
-      char buffer[c];
+      char buffer[c+1];
       for (i = 0; i < c; ++i) buffer[i] = arg[i];
+      buffer[i] = '\0';
       switch (field) {
 	case 0:
 	  dat->year = atoi(buffer);
+	  if (dat->year <= 0 || dat->year >= 3000) return 0; //range check (a bit arbitrary)
 	  break;
 	case 1:
 	  dat->month = atoi(buffer);
+	  if (dat->month < 1 || dat->month > 12) return 0;
 	  break;
 	case 2:
 	  dat->day= atoi(buffer);
+	  if (dat->day < 1 || dat->day > 31) return 0;
 	  break;
 	case 3:
 	  dat->hour= atoi(buffer);
+	  if (dat->hour < 0 || dat->hour > 24) return 0;
 	  break;
 	case 4:
 	  dat->minute = atoi(buffer);
+	  if (dat->minute < 0 || dat->minute > 59) return 0;
 	  break;
 	case 5:
 	  dat->second = atoi(buffer);
+	  if (dat->second < 0 || dat->second > 59) return 0;
 	  break;
       }
     }
@@ -162,14 +169,24 @@ int main(int argc, char *argv[]) {
   }
   
   if (fclose(source) != 0) perror(filename);
-  int i;
-  for (i = 0; i < num_act; ++i) {
+  
+  printf("dat: %d-%d-%d-%d-%d-%d\n", args.dat.year, args.dat.month, args.dat.day, args.dat.hour,args.dat.minute,args.dat.second);
+  printf("until: %d-%d-%d-%d-%d-%d\n", args.until.year, args.until.month, args.until.day,args.until.hour,args.until.minute,args.until.second);
+  if (args.command == INSTALL) printf("install\n");
+  if (args.command == REMOVE) printf("remove\n");
+  if (args.command == UPGRADE) printf("upgrade\n");
+  if (args.removed) printf("-o removed\n");
+  if (args.installed) printf("-o installed\n");
+  if (args.upgraded) printf("-o upgraded\n");
+  
+ /* int i;
+    for (i = 0; i < num_act; ++i) {
     int j;
     for (j = 0; j < (*actions)[i]->num_pack; ++j) {
       printf((*actions)[i]->packages[j]->name);
       printf("\n");
     }
-  }
+  }*/
   return 0;
   
 }
