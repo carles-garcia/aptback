@@ -1,5 +1,6 @@
 #include "log_parse.h"
-#include "stdio.h" 
+#include <stdio.h> 
+#include "mem.h"
 
 
 void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act) {
@@ -24,6 +25,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		(*current)->type = UPGRADE;
 		get_packages(line, *current);
 	}
+	// there is also purge
 	else if (starts_with(line, "End-Date")) {
 		// add new_action to array of actions. If we do it at the end we can be mostly sure that it's a valid action
 		if ((*current)->type != UNDEFINED) {
@@ -32,7 +34,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		  (*actions)[*num_act-1] = *current;
 		  get_date(line, &(*current)->end_date);
 		}
-		else free(*current);
+		else free_action(*current);
 	}
 	else if (!isspace(*line) && *line != '\0') {
 	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated

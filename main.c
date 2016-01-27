@@ -4,6 +4,7 @@
 #include "log_parse.h"
 #include "debug.h"
 #include "selection.h"
+#include "mem.h"
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -179,6 +180,17 @@ int main(int argc, char *argv[]) {
   printf("%d\n",num_sel);
   //debug_actions(*selected, num_sel);
   //debug_args(args);
+  
+  // FREE ALLOCATED MEMORY LEFT
+  int i;
+  for (i = 0; i < num_sel; ++i)
+    free_action((*selected)[i]);
+  
+  free(*selected);
+  free(selected);
+  
+  free(*actions);
+  free(actions);
   
   return 0;
   

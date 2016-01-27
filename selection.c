@@ -8,7 +8,8 @@ int selection(struct arguments args, struct action **actions, int num_act, struc
       *selected = realloc(*selected, num_sel * sizeof(struct action *));
       (*selected)[num_sel-1] = actions[i];
     }
-    else free(actions[i]); //was allocated in evaluate from log_parse.c
+    else free_action(actions[i]);
+     
   }
   return num_sel;
 }
