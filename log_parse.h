@@ -1,6 +1,10 @@
+#pragma once
+
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+
+
 
 struct date {
   int year;
@@ -12,6 +16,14 @@ struct date {
 };
 
 enum action_type { INSTALL, REMOVE, UPGRADE, UNDEFINED };
+
+struct arguments {
+  struct date dat, until;
+  enum action_type command;
+  int installed;
+  int upgraded;
+  int removed;
+};
 
 struct package {
   char *name;

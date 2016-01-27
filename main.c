@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <argp.h>
 #include "log_parse.h"
-
+#include "debug.h"
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -18,18 +18,9 @@ static struct argp_option options[] = {
   { 0 }
 };
 
-struct arguments {
-  struct date dat, until;
-  enum action_type command;
-  int installed;
-  int upgraded;
-  int removed;
-};
-
 
 int parse_date(char *arg, struct date *dat) {
   if (arg == NULL || *arg == '\0') return 0;
-  dat->year = dat->month = dat->day = dat->hour = dat->minute = dat->second = -1;
   char *aux = arg;
   int c, i, field;
   for (field = 0; field < 6; ++field) {
@@ -82,7 +73,6 @@ int parse_date(char *arg, struct date *dat) {
 }
 
 int parse_option(char *arg, struct arguments *arguments) {
-  arguments->installed = arguments->removed = arguments->upgraded = 0;
   char *aux = arg;
   int c;
   while (1) {
@@ -145,9 +135,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
+void init_args(struct arguments *args) {
+  args->installed = args->removed = args->upgraded = 0;
+  args->until.year = args->until.month = args->until.day = args->until.hour = args->until.minute = args->until.second = -1;
+  args->dat.year = args->dat.month = args->dat.day = args->dat.hour = args->dat.minute = args->dat.second = -1;
+  args->command = UNDEFINED;
+}
+
 int main(int argc, char *argv[]) {
   struct arguments args;
+  init_args(&args);
   argp_parse(&argp, argc, argv, 0, 0, &args);
+  
   
   char *filename = "ignore/hist.txt";
   FILE *source;
@@ -155,7 +154,7 @@ int main(int argc, char *argv[]) {
     perror(filename);
   
   struct action ***actions;
-  actions = malloc(sizeof(struct action *));
+  actions = malloc(sizeof(struct action **));
   *actions = malloc(0 * sizeof(struct action *));
   int num_act = 0;
   
@@ -167,26 +166,17 @@ int main(int argc, char *argv[]) {
     free(line);
     line = NULL;  
   }
-  
   if (fclose(source) != 0) perror(filename);
   
-  printf("dat: %d-%d-%d-%d-%d-%d\n", args.dat.year, args.dat.month, args.dat.day, args.dat.hour,args.dat.minute,args.dat.second);
-  printf("until: %d-%d-%d-%d-%d-%d\n", args.until.year, args.until.month, args.until.day,args.until.hour,args.until.minute,args.until.second);
-  if (args.command == INSTALL) printf("install\n");
-  if (args.command == REMOVE) printf("remove\n");
-  if (args.command == UPGRADE) printf("upgrade\n");
-  if (args.removed) printf("-o removed\n");
-  if (args.installed) printf("-o installed\n");
-  if (args.upgraded) printf("-o upgraded\n");
+  struct action ***selected;
+  selected = malloc(sizeof(struct action **));
+  *selected = malloc(0 * sizeof(struct action *));
+  int num_sel = select(args, *actions, num_act, selected);
   
- /* int i;
-    for (i = 0; i < num_act; ++i) {
-    int j;
-    for (j = 0; j < (*actions)[i]->num_pack; ++j) {
-      printf((*actions)[i]->packages[j]->name);
-      printf("\n");
-    }
-  }*/
+  //debug_actions(actions, num_act);
+  debug_args(args);
+  
   return 0;
   
 }
+

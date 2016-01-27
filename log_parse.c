@@ -1,6 +1,7 @@
 #include "log_parse.h"
 #include "stdio.h" 
 
+
 void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act) {
 	if (starts_with(line, "Start-Date")) {
 		struct action *new_action = malloc(sizeof(struct action));
