@@ -2,6 +2,7 @@
 
 #include "log_parse.h"
 #include <stdio.h>
+#include "mem.h"
 
 int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected);
 

@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <argp.h>
+#include <unistd.h>
 #include "log_parse.h"
 #include "debug.h"
 #include "selection.h"
 #include "mem.h"
-#include <unistd.h>
+
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -145,74 +146,6 @@ void init_args(struct arguments *args) {
   args->command = UNDEFINED;
 }
 
-int main(int argc, char *argv[]) {
-  struct arguments args;
-  init_args(&args);
-  argp_parse(&argp, argc, argv, 0, 0, &args);
-  
-  char *filename = "ignore/hist.txt";
-  FILE *source;
-  if ((source = fopen(filename, "r")) == NULL) 
-    perror(filename);
-  
-  struct action ***actions;
-  actions = malloc(sizeof(struct action **));
-  *actions = malloc(0 * sizeof(struct action *));
-  int num_act = 0;
-  
-  struct action *current = NULL;
-  char *line = NULL;  
-  size_t n = 0;
-  while (getline(&line, &n, source) > 0) { // or >= ???
-    evaluate_line(line, &current, actions, &num_act);
-    free(line);
-    line = NULL;  
-  }
-  if (fclose(source) != 0) perror(filename);
-  
-  struct action ***selected;
-  selected = malloc(sizeof(struct action **));
-  *selected = malloc(0 * sizeof(struct action *));
-  int num_sel = selection(args, *actions, num_act, selected);
-  
-  // at this point some actions have been freed
-  // DON'T USE ***actions AGAIN
-  
-  if (args.command == INSTALL) {
-    char *apt_argv[num_sel+2];
-    apt_argv[0] = "apt-get";
-    apt_argv[1] = "install";
-    int k;
-    int n = 2;
-    for (k = 0; k < num_sel; ++k) {
-      int l;
-      for (l = 0; l < (*selected)[k]->num_pack; ++l) {
-	apt_argv[n++] = (*selected)[k]->packages[l]->name;
-      }
-    }
-    //int rc = exec_apt(apt_argv);
-  }
-  
-  
-  printf("%d\n",num_sel);
-  //debug_actions(*selected, num_sel);
-  //debug_args(args);
-  
-  // FREE ALLOCATED MEMORY LEFT
-  int i;
-  for (i = 0; i < num_sel; ++i)
-    free_action((*selected)[i]);
-  
-  free(*selected);
-  free(selected);
-  
-  free(*actions);
-  free(actions);
-  
-  return 0;
-  
-}
-
 int exec_apt(char **argv) {
   pid_t my_pid;
   int status;
@@ -225,4 +158,106 @@ int exec_apt(char **argv) {
   }
   
   return 0;
+}
+
+int main(int argc, char *argv[]) {
+  
+  /* Input arguments processing */
+  struct arguments args;
+  init_args(&args);
+  argp_parse(&argp, argc, argv, 0, 0, &args);
+  
+  /* method: copy logs from /var/log/apt/ to /tmp/aptback 
+  unzip them there and read them */
+  /* Apt-log search and processing */
+  char *path = "/var/log/apt/";
+  char *filename = "ignore/hist.txt";
+  FILE *source;
+  if ((source = fopen(filename, "r")) == NULL) 
+    perror(filename);
+  struct action ***actions;
+  actions = malloc(sizeof(struct action **));
+  *actions = malloc(0 * sizeof(struct action *));
+  int num_act = 0;
+  
+  DIR* apt_dir;
+  struct dirent* in_file;
+  FILE log_file;
+  
+  if ((apt_dir = opendir("/var/log/apt/")) == NULL) {
+    fprintf(stderr, "Error : Failed to open input directory - %s\n", strerror(errno));
+    fclose(common_file);
+    exit(EXIT_FAILURE);
+  }
+  while ((in_file = readdir(apt_dir))) {
+    if (!strcmp (in_file->d_name, "."))
+      continue;
+    if (!strcmp (in_file->d_name, ".."))    
+      continue;
+    
+    if (starts_with(in_file->d_name, "history.log.") //zcat
+    if (strcmp(in_file->d_name, "history.log") == 0) {
+      //read
+      log_file = fopen(in_file->d_name, "r");
+      if (log_file == NULL) {
+	fprintf(stderr, "Error : Failed to open logfile - %s\n", strerror(errno));
+	fclose(common_file);
+	exit(EXIT_FAILURE);
+      }
+  
+      struct action *current = NULL;
+      char *line = NULL;  
+      size_t n = 0;
+      while (getline(&line, &n, source) > 0) { // or >= ???
+	evaluate_line(line, &current, actions, &num_act);
+	free(line);
+	line = NULL;  
+      }
+      if (fclose(log_file) != 0) perror("log_file");
+    }
+  }
+  closedir(apt_dir);
+  
+  /* Actions selection based on input */
+  struct action ***selected;
+  selected = malloc(sizeof(struct action **));
+  *selected = malloc(0 * sizeof(struct action *));
+  int num_sel = selection(args, *actions, num_act, selected);
+  
+  // at this point some actions have been freed
+  // DON'T USE ***actions AGAIN
+  
+  /* Apt-get call */
+  const char *apt_argv[num_sel+2];
+  apt_argv[0] = "apt-get";
+  if (args.command == INSTALL) apt_argv[1] = "install";
+  else if (args.command == REMOVE) apt_argv[1] = "remove";
+  else apt_argv[1] = "upgrade"; // should update before calling upgrade?
+  int num = 2, k;
+  for (k = 0; k < num_sel; ++k) {
+    int l;
+    for (l = 0; l < (*selected)[k]->num_pack; ++l) {
+      apt_argv[num++] = (*selected)[k]->packages[l]->name;
+    }
+  }
+  //int rc = exec_apt(apt_argv);
+  
+  
+  //printf("%d\n",num_sel);
+  //debug_actions(*selected, num_sel);
+  //debug_args(args);
+  
+  /* Free allocated memory left */
+  int i;
+  for (i = 0; i < num_sel; ++i)
+    free_action((*selected)[i]);
+  
+  free(*selected);
+  free(selected);
+  
+  free(*actions);
+  free(actions);
+  
+  return 0;
+  
 }
