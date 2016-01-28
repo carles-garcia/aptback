@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
   struct arguments args;
   init_args(&args);
   argp_parse(&argp, argc, argv, 0, 0, &args);
-  
+
   /* method: copy logs from /var/log/apt/ to /tmp/aptback 
   unzip them there and read them */
   /* Apt-log search and processing */
@@ -180,41 +180,47 @@ int main(int argc, char *argv[]) {
   *actions = malloc(0 * sizeof(struct action *));
   int num_act = 0;
   
-  DIR* apt_dir;
+  DIR *apt_dir;
   struct dirent* in_file;
-  FILE log_file;
+  FILE *log_file;
   
   if ((apt_dir = opendir("/var/log/apt/")) == NULL) {
     fprintf(stderr, "Error : Failed to open input directory - %s\n", strerror(errno));
     fclose(common_file);
     exit(EXIT_FAILURE);
   }
+  /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
+   * parse all logs, only until we find the max date */
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
       continue;
     if (!strcmp (in_file->d_name, ".."))    
       continue;
     
-    if (starts_with(in_file->d_name, "history.log.") //zcat
-    if (strcmp(in_file->d_name, "history.log") == 0) {
-      //read
+    if (starts_with(in_file->d_name, "history.log.") {
+      mknod("/tmp/aptback/pipe", S_IFIFO, 0);
+      //zcat in_file->d_name > /tmp/aptback/pipe
+      int fd = open("/tmp/aptback/pipe", "r");
+      log_file = fdopen(fd, "r"); //only need to close log_file, fd will close then too
+    }
+    else if (strcmp(in_file->d_name, "history.log") == 0) {
       log_file = fopen(in_file->d_name, "r");
       if (log_file == NULL) {
 	fprintf(stderr, "Error : Failed to open logfile - %s\n", strerror(errno));
 	fclose(common_file);
 	exit(EXIT_FAILURE);
       }
-  
-      struct action *current = NULL;
-      char *line = NULL;  
-      size_t n = 0;
-      while (getline(&line, &n, source) > 0) { // or >= ???
-	evaluate_line(line, &current, actions, &num_act);
-	free(line);
-	line = NULL;  
-      }
-      if (fclose(log_file) != 0) perror("log_file");
     }
+  
+    struct action *current = NULL;
+    char *line = NULL;  
+    size_t n = 0;
+    while (getline(&line, &n, source) > 0) { // or >= ??? | log_file instead of source
+      evaluate_line(line, &current, actions, &num_act);
+      free(line);
+      line = NULL;  
+    }
+    if (fclose(log_file) != 0) perror("log_file");
   }
   closedir(apt_dir);
   
