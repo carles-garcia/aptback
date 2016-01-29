@@ -15,3 +15,8 @@ void free_action(struct action *actions) {
   free(actions->packages);
   free(actions); 
 }
+
+void eperror(char *msg) {
+  perror(msg);
+  exit(EXIT_FAILURE);
+}

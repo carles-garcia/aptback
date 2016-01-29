@@ -90,6 +90,7 @@ int parse_option(char *arg, struct arguments *arguments) {
       ++c;
     }
     char *buffer = malloc((c+1) * sizeof(char));
+    if (buffer == NULL) eperror("Failed to malloc at parse_option");
     int i;
     for (i = 0; i < c; ++i) buffer[i] = arg[i];
     buffer[i] = '\0';
@@ -162,25 +163,25 @@ int main(int argc, char *argv[]) {
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
     perror(filename);
+  
   struct action ***actions;
   actions = malloc(sizeof(struct action **));
-  *actions = malloc(0 * sizeof(struct action *));
+  if (actions == NULL) eperror("Failed to malloc actions at main");
+
+  *actions = NULL;
   int num_act = 0;
   
   DIR *apt_dir;
   struct dirent* in_file;
   FILE *log_file;
   
-  if ((apt_dir = opendir("/var/log/apt/")) == NULL) {
-    perror("Failed to open log directory");
-    exit(EXIT_FAILURE);
-  }
+  if ((apt_dir = opendir("/var/log/apt/")) == NULL) eperror("Failed to open log directory");
+
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
-  if (mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH) == -1) { // 0705 so zcat can read from the pipe
-    perror("Failed to create temporary directory");
-    exit(EXIT_FAILURE);
-  }
+  if (mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH) == -1) // 0705 so zcat can read from the pipe
+    eperror("Failed to create temporary directory");
+  // should delete directory and pipe?
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
       continue;
@@ -188,42 +189,25 @@ int main(int argc, char *argv[]) {
       continue;
     
     if (starts_with(in_file->d_name, "history.log.")) { // redo starts_with
-      if (mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0) {
-	perror("Failed to create pipe");
-	exit(EXIT_FAILURE);
-      }
+      if (mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0)
+	eperror("Failed to create pipe");
+
       int pid = fork();
       if (pid == 0) {
 	int fd = open("/tmp/aptback/pipe", O_WRONLY);
-	if (fd == -1) {
-	  perror("Failed to open pipe to write");
-	  exit(EXIT_FAILURE);
-	}
-	if (dup2(fd, 1) == -1) { // change output channel to pipe
-	  perror("Failed to dup2 pipe");
-	  exit(EXIT_FAILURE);
-	}
-	if (execlp("zcat", "zcat", in_file->d_name, NULL) == -1) {
-	  perror("Failed to exec to zcat");
-	  exit(EXIT_FAILURE); 
-	}
+	if (fd == -1) eperror("Failed to open pipe to write");
+	if (dup2(fd, 1) == -1) // change output channel to pipe
+	  eperror("Failed to dup2 pipe");
+	if (execlp("zcat", "zcat", in_file->d_name, NULL) == -1)
+	  eperror("Failed to exec to zcat");
       }
-      else if (pid == -1) {
-	perror("Failed to fork process to execute zcat");
-	exit(EXIT_FAILURE);
-      }
+      else if (pid == -1) eperror("Failed to fork process to execute zcat");
       log_file = fopen("/tmp/aptback/pipe", "r");
-      if (log_file == NULL) {
-	perror("Failed to open pipe to read");
-	exit(EXIT_FAILURE);
-      }
+      if (log_file == NULL) eperror("Failed to open pipe to read");
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
       log_file = fopen(in_file->d_name, "r");
-      if (log_file == NULL) {
-	perror("Failed to open log_file to read");
-	exit(EXIT_FAILURE);
-      }
+      if (log_file == NULL) eperror("Failed to open log_file to read");
     }
     else continue; // other irrelevant files
   
@@ -235,20 +219,16 @@ int main(int argc, char *argv[]) {
       free(line);
       line = NULL;  
     }
-    if (fclose(log_file) != 0) {
-      perror("Failed to close log_file");
-      exit(EXIT_FAILURE);
-    }
+    if (fclose(log_file) != 0) eperror("Failed to close log_file");
   }
-  if (closedir(apt_dir) == -1) {
-    perror("Failed to close log directory");
-    exit(EXIT_FAILURE);
-  }
+  if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
   
   /* Actions selection based on input */
   struct action ***selected;
   selected = malloc(sizeof(struct action **));
-  *selected = malloc(0 * sizeof(struct action *));
+  if (selected == NULL) eperror("Failed to malloc selected at main");
+    
+  *selected = NULL;
   int num_sel = selection(args, *actions, num_act, selected);
   
   // at this point some actions have been freed
@@ -269,16 +249,9 @@ int main(int argc, char *argv[]) {
   }
   int pid = fork();
   if (pid == 0) {
-    if (execvp(apt_argv[0], apt_argv) == -1) {
-      perror("Failed to exec to apt-get");
-      exit(EXIT_FAILURE); 
-    }
+    if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get");
   }
-  else if (pid == -1) {
-    perror("Failed to fork process to execute apt-get");
-    exit(EXIT_FAILURE);
-  }
-  
+  else if (pid == -1) eperror("Failed to fork process to execute apt-get");
   
   //printf("%d\n",num_sel);
   //debug_actions(*selected, num_sel);
