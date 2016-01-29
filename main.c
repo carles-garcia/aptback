@@ -3,6 +3,9 @@
 #include <argp.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <fcntl.h>
+
 #include "log_parse.h"
 #include "debug.h"
 #include "selection.h"
@@ -147,20 +150,6 @@ void init_args(struct arguments *args) {
   args->command = UNDEFINED;
 }
 
-int exec_apt(char **argv) {
-  pid_t my_pid;
-  int status;
-  
-  if ((my_pid = fork()) == 0) {
-    if (execve(argv[0], (char **)argv , NULL) == -1) {
-      perror("child process execve failed [%m]");
-      return -1;
-    }
-  }
-  
-  return 0;
-}
-
 int main(int argc, char *argv[]) {
   
   /* Input arguments processing */
@@ -168,10 +157,7 @@ int main(int argc, char *argv[]) {
   init_args(&args);
   argp_parse(&argp, argc, argv, 0, 0, &args);
 
-  /* method: copy logs from /var/log/apt/ to /tmp/aptback 
-  unzip them there and read them */
   /* Apt-log search and processing */
-  char *path = "/var/log/apt/";
   char *filename = "ignore/hist.txt";
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
@@ -186,50 +172,78 @@ int main(int argc, char *argv[]) {
   FILE *log_file;
   
   if ((apt_dir = opendir("/var/log/apt/")) == NULL) {
-    fprintf(stderr, "Error : Failed to open input directory - %s\n", strerror(errno));
-    fclose(common_file);
+    perror("Failed to open log directory");
     exit(EXIT_FAILURE);
   }
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
-  mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH); // 0705 so zcat can read from the pipe
+  if (mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH) == -1) { // 0705 so zcat can read from the pipe
+    perror("Failed to create temporary directory");
+    exit(EXIT_FAILURE);
+  }
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
       continue;
     if (!strcmp (in_file->d_name, ".."))    
       continue;
     
-    if (starts_with(in_file->d_name, "history.log.") {
-      mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0);
-      if (fork() == 0) {
-	int fd1 = open("/tmp/aptback/pipe", "w");
-	dup2(fd1, 1); // change output channel to pipe
-	execlp("zcat", "zcat", in_file->d_name);
+    if (starts_with(in_file->d_name, "history.log.")) { // redo starts_with
+      if (mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0) {
+	perror("Failed to create pipe");
+	exit(EXIT_FAILURE);
       }
-      int fd = open("/tmp/aptback/pipe", "r");
-      log_file = fdopen(fd, "r"); //only need to close log_file, fd will close then too
+      int pid = fork();
+      if (pid == 0) {
+	int fd = open("/tmp/aptback/pipe", O_WRONLY);
+	if (fd == -1) {
+	  perror("Failed to open pipe to write");
+	  exit(EXIT_FAILURE);
+	}
+	if (dup2(fd, 1) == -1) { // change output channel to pipe
+	  perror("Failed to dup2 pipe");
+	  exit(EXIT_FAILURE);
+	}
+	if (execlp("zcat", "zcat", in_file->d_name, NULL) == -1) {
+	  perror("Failed to exec to zcat");
+	  exit(EXIT_FAILURE); 
+	}
+      }
+      else if (pid == -1) {
+	perror("Failed to fork process to execute zcat");
+	exit(EXIT_FAILURE);
+      }
+      log_file = fopen("/tmp/aptback/pipe", "r");
+      if (log_file == NULL) {
+	perror("Failed to open pipe to read");
+	exit(EXIT_FAILURE);
+      }
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
       log_file = fopen(in_file->d_name, "r");
       if (log_file == NULL) {
-	fprintf(stderr, "Error : Failed to open logfile - %s\n", strerror(errno));
-	fclose(common_file);
+	perror("Failed to open log_file to read");
 	exit(EXIT_FAILURE);
       }
     }
-    else continue;
+    else continue; // other irrelevant files
   
     struct action *current = NULL;
     char *line = NULL;  
     size_t n = 0;
-    while (getline(&line, &n, source) > 0) { // or >= ??? | log_file instead of source
+    while (getline(&line, &n, source) > 0) { // log_file instead of source
       evaluate_line(line, &current, actions, &num_act);
       free(line);
       line = NULL;  
     }
-    if (fclose(log_file) != 0) perror("log_file");
+    if (fclose(log_file) != 0) {
+      perror("Failed to close log_file");
+      exit(EXIT_FAILURE);
+    }
   }
-  closedir(apt_dir);
+  if (closedir(apt_dir) == -1) {
+    perror("Failed to close log directory");
+    exit(EXIT_FAILURE);
+  }
   
   /* Actions selection based on input */
   struct action ***selected;
@@ -241,7 +255,7 @@ int main(int argc, char *argv[]) {
   // DON'T USE ***actions AGAIN
   
   /* Apt-get call */
-  const char *apt_argv[num_sel+2];
+  char *apt_argv[num_sel+2];
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
   else if (args.command == REMOVE) apt_argv[1] = "remove";
@@ -253,7 +267,17 @@ int main(int argc, char *argv[]) {
       apt_argv[num++] = (*selected)[k]->packages[l]->name;
     }
   }
-  //int rc = exec_apt(apt_argv);
+  int pid = fork();
+  if (pid == 0) {
+    if (execvp(apt_argv[0], apt_argv) == -1) {
+      perror("Failed to exec to apt-get");
+      exit(EXIT_FAILURE); 
+    }
+  }
+  else if (pid == -1) {
+    perror("Failed to fork process to execute apt-get");
+    exit(EXIT_FAILURE);
+  }
   
   
   //printf("%d\n",num_sel);

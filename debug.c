@@ -14,7 +14,7 @@ void debug_args(struct arguments args) {
 void debug_actions(struct action **actions, int num_act) {
   int i;
   for (i = 0; i < num_act; ++i) {
-    int j;
+    //int j;
     //for (j = 0; j < actions[i]->num_pack; ++j) {
       printf("%d",actions[i]->start_date.year);
       printf("\n");
