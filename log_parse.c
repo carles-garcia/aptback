@@ -44,15 +44,11 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 }
 
 int starts_with(char *line, char *string) {
-	// line should never be NULL
-	while (1) {
-		if (!isalpha(*line) && *line != '-') {
-			if (*string == '\0') return 1;
-			else return 0;
-		}
-		else if (!isalpha(*string) && *string != '-') return 0;
-		else if (*line++ != *string++) return 0;
-	}
+  if (line == NULL || string == NULL) return 0;
+  while(*string != '\0')
+    if(*string++ != *line++)
+      return 0;
+  return 1;
 }
 
 void get_date(char *line, struct date *dat) {
@@ -170,7 +166,7 @@ void get_packages(char *line, struct action *current) {
 		current->num_pack += 1;
 		current->packages = realloc(current->packages, current->num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
 		// which is the number of packages in the line and do only one big malloc
-		if (new_pack->packages == NULL) eperror("Failed to realloc packages at get_packages");
+		if (current->packages == NULL) eperror("Failed to realloc packages at get_packages");
 		current->packages[current->num_pack-1] = new_pack;
 		
 		
