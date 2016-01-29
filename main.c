@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <argp.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "log_parse.h"
 #include "debug.h"
 #include "selection.h"
@@ -191,6 +192,7 @@ int main(int argc, char *argv[]) {
   }
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
+  mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH); // 0705 so zcat can read from the pipe
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
       continue;
@@ -198,8 +200,12 @@ int main(int argc, char *argv[]) {
       continue;
     
     if (starts_with(in_file->d_name, "history.log.") {
-      mknod("/tmp/aptback/pipe", S_IFIFO, 0);
-      //zcat in_file->d_name > /tmp/aptback/pipe
+      mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0);
+      if (fork() == 0) {
+	int fd1 = open("/tmp/aptback/pipe", "w");
+	dup2(fd1, 1); // change output channel to pipe
+	execlp("zcat", "zcat", in_file->d_name);
+      }
       int fd = open("/tmp/aptback/pipe", "r");
       log_file = fdopen(fd, "r"); //only need to close log_file, fd will close then too
     }
@@ -211,6 +217,7 @@ int main(int argc, char *argv[]) {
 	exit(EXIT_FAILURE);
       }
     }
+    else continue;
   
     struct action *current = NULL;
     char *line = NULL;  
