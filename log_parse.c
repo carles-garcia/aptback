@@ -6,6 +6,7 @@
 void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act) {
 	if (starts_with(line, "Start-Date")) {
 		struct action *new_action = malloc(sizeof(struct action));
+		if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
 		init_action(new_action);
 		*current = new_action;
 		get_date(line, &(*current)->start_date);
@@ -31,6 +32,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		if ((*current)->type != UNDEFINED) {
 		  ++(*num_act);
 		  *actions = realloc(*actions, *num_act * sizeof(struct action *));
+		  if (*actions == NULL) eperror("Failed to realloc *actions at evaluate_line");
 		  (*actions)[*num_act-1] = *current;
 		  get_date(line, &(*current)->end_date);
 		}
@@ -94,6 +96,7 @@ void get_command(char *line, struct action *current) {
 	while (isspace(*line)) ++line;
 	// now we have the command
 	current->command = malloc((strlen(line)+1) * sizeof(char)); //will free when exiting program
+	if (current->command == NULL) eperror("Failed to malloc command at get_command");
 	strcpy(current->command, line); 
 }
 
@@ -101,6 +104,7 @@ void get_packages(char *line, struct action *current) {
 	while (*line++ != ' '); //pass space
 	while (1) {
 		struct package *new_pack = malloc(sizeof(struct package));
+		if (new_pack == NULL) eperror("Failed to malloc new_pack at get_packages");
 		init_pack(new_pack);
 		char *line_aux = line;
 		int c = 0;
@@ -110,6 +114,7 @@ void get_packages(char *line, struct action *current) {
 		}
 		++line_aux;
 		new_pack->name = malloc((c+1) * sizeof(char));
+		if (new_pack->name == NULL) eperror("Failed to malloc name at get_packages");
 		int i;
 		for (i = 0; i < c; ++i) {
 		  new_pack->name[i] = line[i];
@@ -124,6 +129,7 @@ void get_packages(char *line, struct action *current) {
 		++line_aux;
 		++line_aux; //now we are at version
 		new_pack->arch = malloc((c+1) * sizeof(char));
+		if (new_pack->arch == NULL) eperror("Failed to malloc arch at get_packages");
 		for (i = 0; i < c; ++i) {
 		  new_pack->arch[i] = line[i];
 		}
@@ -137,6 +143,7 @@ void get_packages(char *line, struct action *current) {
 		if (current->type == INSTALL && *line_aux == ',') new_pack->automatic = 1;
 		else new_pack->automatic = 0;
 		new_pack->version = malloc((c+1) * sizeof(char));
+		if (new_pack->version == NULL) eperror("Failed to malloc version at get_packages");
 		for (i = 0; i < c; ++i) {
 		  new_pack->version[i] = line[i];
 		}
@@ -151,6 +158,7 @@ void get_packages(char *line, struct action *current) {
 		    ++line_aux;
 		  }
 		  new_pack->newversion = malloc((c+1) * sizeof(char));
+		  if (new_pack->newversion == NULL) eperror("Failed to malloc newversion at get_packages");
 		  for (i = 0; i < c; ++i) {
 		    new_pack->newversion[i] = line[i];
 		  }
@@ -162,6 +170,7 @@ void get_packages(char *line, struct action *current) {
 		current->num_pack += 1;
 		current->packages = realloc(current->packages, current->num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
 		// which is the number of packages in the line and do only one big malloc
+		if (new_pack->packages == NULL) eperror("Failed to realloc packages at get_packages");
 		current->packages[current->num_pack-1] = new_pack;
 		
 		
@@ -182,7 +191,7 @@ void init_action(struct action *current) {
 	memset(&current->start_date, 0, sizeof(struct date));
 	current->command = NULL;
 	current->type = UNDEFINED;
-	current->packages = malloc(0 * sizeof(struct package *));
+	current->packages = NULL;
 	current->num_pack = 0;
 	memset(&current->end_date, 0, sizeof(struct date));
 }

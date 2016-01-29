@@ -1,4 +1,5 @@
 #include "selection.h"
+#include "mem.h"
 
 int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected) {
   int i, num_sel = 0;
@@ -6,6 +7,7 @@ int selection(struct arguments args, struct action **actions, int num_act, struc
     if (satisfies(args, actions[i])) {
       ++num_sel;
       *selected = realloc(*selected, num_sel * sizeof(struct action *));
+      if (*selected == NULL) eperror("Failed to realloc *selected at selection");
       (*selected)[num_sel-1] = actions[i];
     }
     else free_action(actions[i]);
