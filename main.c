@@ -256,12 +256,15 @@ int main(int argc, char *argv[]) {
   // DON'T USE ***actions AGAIN
   
   /* Apt-get call */
-  char *apt_argv[num_sel+2];
+  int k, siz = 0;
+  for (k = 0; k < num_sel; ++k)
+    siz += (*selected)[k]->num_pack;
+  char *apt_argv[siz+2];
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
   else if (args.command == REMOVE) apt_argv[1] = "remove";
   else apt_argv[1] = "upgrade"; // should update before calling upgrade?
-  int num = 2, k;
+  int num = 2;
   for (k = 0; k < num_sel; ++k) {
     int l;
     for (l = 0; l < (*selected)[k]->num_pack; ++l) {
