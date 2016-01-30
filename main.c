@@ -211,6 +211,10 @@ int main(int argc, char *argv[]) {
 	log_file = fopen(pipe_path, "r");
 	if (log_file == NULL) eperror("Failed to open pipe to read");
       }*/
+      else {
+	log_file = fopen(pipe_path, "r");
+	if (log_file == NULL) eperror("Failed to open pipe to read");
+      }
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
       log_file = fopen(in_file->d_name, "r");
