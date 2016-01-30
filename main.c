@@ -152,6 +152,9 @@ void init_args(struct arguments *args) {
 }
 
 int main(int argc, char *argv[]) {
+  const char *apt_path = "/var/log/apt/";
+  const char *tmp_path = "/tmp/aptback/";
+  const char *pipe_path = "/tmp/aptback/pipe";
   
   /* Input arguments processing */
   struct arguments args;
@@ -159,42 +162,41 @@ int main(int argc, char *argv[]) {
   argp_parse(&argp, argc, argv, 0, 0, &args);
 
   /* Apt-log search and processing */
+  /* debug
   char *filename = "ignore/hist.txt";
   FILE *source;
   if ((source = fopen(filename, "r")) == NULL) 
     perror(filename);
+  */
   
   struct action ***actions;
   actions = malloc(sizeof(struct action **));
   if (actions == NULL) eperror("Failed to malloc actions at main");
-
   *actions = NULL;
   int num_act = 0;
   
   DIR *apt_dir;
-  struct dirent* in_file;
+  struct dirent *in_file;
   FILE *log_file;
-  
-  if ((apt_dir = opendir("/var/log/apt/")) == NULL) eperror("Failed to open log directory");
 
+  if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
-  if (mkdir("/tmp/aptback/", S_IRWXU | S_IROTH | S_IXOTH) == -1) // 0705 so zcat can read from the pipe
-    eperror("Failed to create temporary directory");
-  // should delete directory and pipe?
+  if (mkdir(tmp_path, S_IRWXU | S_IROTH | S_IXOTH) == -1) // 0705 so zcat can read from the pipe
+    eperror("Failed to create tmp directory");
+  if (mknod(pipe_path, S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0)
+    eperror("Failed to create pipe");
+  
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
       continue;
     if (!strcmp (in_file->d_name, ".."))    
       continue;
     
-    if (starts_with(in_file->d_name, "history.log.")) { // redo starts_with
-      if (mknod("/tmp/aptback/pipe", S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0)
-	eperror("Failed to create pipe");
-
+    if (starts_with(in_file->d_name, "history.log.")) { 
       int pid = fork();
       if (pid == 0) {
-	int fd = open("/tmp/aptback/pipe", O_WRONLY);
+	int fd = open(pipe_path, O_WRONLY);
 	if (fd == -1) eperror("Failed to open pipe to write");
 	if (dup2(fd, 1) == -1) // change output channel to pipe
 	  eperror("Failed to dup2 pipe");
@@ -202,8 +204,13 @@ int main(int argc, char *argv[]) {
 	  eperror("Failed to exec to zcat");
       }
       else if (pid == -1) eperror("Failed to fork process to execute zcat");
-      log_file = fopen("/tmp/aptback/pipe", "r");
-      if (log_file == NULL) eperror("Failed to open pipe to read");
+      /*else { This won't work because pipes are 64k in size and logs can be bigger
+	int stat = 0;
+	if (wait(&stat) == -1) eperror("Failed to wait for zcat");
+	if (WIFEXITED(stat) == 0) eperror("zcat exited abnormally");
+	log_file = fopen(pipe_path, "r");
+	if (log_file == NULL) eperror("Failed to open pipe to read");
+      }*/
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
       log_file = fopen(in_file->d_name, "r");
@@ -214,14 +221,20 @@ int main(int argc, char *argv[]) {
     struct action *current = NULL;
     char *line = NULL;  
     size_t n = 0;
-    while (getline(&line, &n, source) > 0) { // log_file instead of source
+    while (getline(&line, &n, log_file) > 0) { 
       evaluate_line(line, &current, actions, &num_act);
       free(line);
       line = NULL;  
     }
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
+    
   }
   if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
+  // max size of pipe?
+  if (unlink(pipe_path) == -1) eperror("Failed to remove pipe");
+  if (rmdir(tmp_path) == -1) eperror("Failed to remove tmp directory");
+  // remove tmp dir
+
   
   /* Actions selection based on input */
   struct action ***selected;
@@ -249,7 +262,7 @@ int main(int argc, char *argv[]) {
   }
   int pid = fork();
   if (pid == 0) {
-    if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get");
+    if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
   }
   else if (pid == -1) eperror("Failed to fork process to execute apt-get");
   
