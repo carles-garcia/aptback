@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
   selected = malloc(sizeof(struct action **));
   if (selected == NULL) eperror("Failed to malloc selected at main");  
   *selected = NULL;
-  int total_packages;
+  int total_packages = 0;
   int num_sel = selection(args, *actions, num_act, selected, &total_packages);
   
   // at this point some actions have been freed
