@@ -200,7 +200,9 @@ int main(int argc, char *argv[]) {
 	if (fd == -1) eperror("Failed to open pipe to write");
 	if (dup2(fd, 1) == -1) // change output channel to pipe
 	  eperror("Failed to dup2 pipe");
-	if (execlp("zcat", "zcat", in_file->d_name, NULL) == -1)
+	char path[strlen(apt_path) + strlen(in_file->d_name)];
+	sprintf(path, "%s%s", apt_path, in_file->d_name);
+	if (execlp("zcat", "zcat", path, NULL) == -1)
 	  eperror("Failed to exec to zcat");
       }
       else if (pid == -1) eperror("Failed to fork process to execute zcat");
@@ -217,7 +219,9 @@ int main(int argc, char *argv[]) {
       }
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
-      log_file = fopen(in_file->d_name, "r");
+      char path[strlen(apt_path) + strlen(in_file->d_name)];
+      sprintf(path, "%s%s", apt_path, in_file->d_name);
+      log_file = fopen(path, "r");
       if (log_file == NULL) eperror("Failed to open log_file to read");
     }
     else continue; // other irrelevant files
