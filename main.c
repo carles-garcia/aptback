@@ -162,12 +162,6 @@ int main(int argc, char *argv[]) {
   argp_parse(&argp, argc, argv, 0, 0, &args);
 
   /* Apt-log search and processing */
-  /* debug
-  char *filename = "ignore/hist.txt";
-  FILE *source;
-  if ((source = fopen(filename, "r")) == NULL) 
-    perror(filename);
-  */
   
   struct action ***actions;
   actions = malloc(sizeof(struct action **));
@@ -229,47 +223,37 @@ int main(int argc, char *argv[]) {
     struct action *current = NULL;
     char *line = NULL;  
     size_t n = 0;
-    int lines = 0;
-    while (getline(&line, &n, log_file) >= 0) { 
+    while (getline(&line, &n, log_file) > 0) { 
       evaluate_line(line, &current, actions, &num_act);
       free(line);
-      line = NULL;  
-     //++lines;
-      //n = 0;
-    } // i thin what happens is that 
+      line = NULL;
+      n = 0;
+    } 
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
-    //printf("\n***** lines %d ****\n", lines);
   }
   if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
-  // max size of pipe?
   if (unlink(pipe_path) == -1) eperror("Failed to remove pipe");
   if (rmdir(tmp_path) == -1) eperror("Failed to remove tmp directory");
-  // remove tmp dir
-
   
   /* Actions selection based on input */
   struct action ***selected;
   selected = malloc(sizeof(struct action **));
-  if (selected == NULL) eperror("Failed to malloc selected at main");
-    
+  if (selected == NULL) eperror("Failed to malloc selected at main");  
   *selected = NULL;
-  int num_sel = selection(args, *actions, num_act, selected);
+  int total_packages;
+  int num_sel = selection(args, *actions, num_act, selected, &total_packages);
   
   // at this point some actions have been freed
   // DON'T USE ***actions AGAIN
   
   /* Apt-get call */
-  int k, siz = 0;
-  for (k = 0; k < num_sel; ++k)
-    siz += (*selected)[k]->num_pack;
-  //printf("\n**** %d *****\n", siz);
-  char *apt_argv[siz+2+1]; // +2 for the first 2, +1 for the last NULL
+  char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
   else if (args.command == REMOVE) apt_argv[1] = "remove";
   else apt_argv[1] = "upgrade"; // should update before calling upgrade?
-  apt_argv[siz+2] = NULL;
-  int num = 2;
+  apt_argv[total_packages + 2] = NULL;
+  int num = 2, k;
   for (k = 0; k < num_sel; ++k) {
     int l;
     for (l = 0; l < (*selected)[k]->num_pack; ++l) {
@@ -279,11 +263,9 @@ int main(int argc, char *argv[]) {
   int pid = fork();
   if (pid == 0) {
     if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
-    int dj = 0;
   }
   else if (pid == -1) eperror("Failed to fork process to execute apt-get");
   
-  //printf("%d\n",num_sel);
   //debug_actions(*selected, num_sel);
   //debug_args(args);
   

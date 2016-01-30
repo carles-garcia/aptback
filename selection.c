@@ -1,7 +1,7 @@
 #include "selection.h"
 #include "mem.h"
 
-int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected) {
+int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected, int *total_packages) {
   int i, num_sel = 0;
   for (i = 0; i < num_act; ++i) {
     if (satisfies(args, actions[i])) {
@@ -9,6 +9,7 @@ int selection(struct arguments args, struct action **actions, int num_act, struc
       *selected = realloc(*selected, num_sel * sizeof(struct action *));
       if (*selected == NULL) eperror("Failed to realloc *selected at selection");
       (*selected)[num_sel-1] = actions[i];
+      *total_packages += actions[i]->num_pack;
     }
     else free_action(actions[i]);
      
