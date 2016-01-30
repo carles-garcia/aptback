@@ -229,13 +229,16 @@ int main(int argc, char *argv[]) {
     struct action *current = NULL;
     char *line = NULL;  
     size_t n = 0;
-    while (getline(&line, &n, log_file) > 0) { 
+    int lines = 0;
+    while (getline(&line, &n, log_file) >= 0) { 
       evaluate_line(line, &current, actions, &num_act);
       free(line);
       line = NULL;  
-    }
+     //++lines;
+      //n = 0;
+    } // i thin what happens is that 
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
-    
+    //printf("\n***** lines %d ****\n", lines);
   }
   if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
   // max size of pipe?
@@ -259,6 +262,7 @@ int main(int argc, char *argv[]) {
   int k, siz = 0;
   for (k = 0; k < num_sel; ++k)
     siz += (*selected)[k]->num_pack;
+  //printf("\n**** %d *****\n", siz);
   char *apt_argv[siz+2+1]; // +2 for the first 2, +1 for the last NULL
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
@@ -275,6 +279,7 @@ int main(int argc, char *argv[]) {
   int pid = fork();
   if (pid == 0) {
     if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
+    int dj = 0;
   }
   else if (pid == -1) eperror("Failed to fork process to execute apt-get");
   
