@@ -33,6 +33,7 @@ struct package {
   int automatic; // Only for INSTALL
 };	
 
+// modify to accept installed and upgraded at the same time (and possibly other combinations)
 struct action {
   struct date start_date;
   char *command;

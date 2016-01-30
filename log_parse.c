@@ -22,7 +22,7 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		(*current)->type = REMOVE;
 		get_packages(line, *current);
 	}
-	else if (starts_with(line, "Upgrade")) { // an actioni can have install and upgrade at the same time
+	else if (starts_with(line, "Upgrade")) { // an action can have install and upgrade at the same time
 		(*current)->type = UPGRADE;
 		get_packages(line, *current);
 	}
@@ -38,9 +38,11 @@ void evaluate_line(char *line, struct action **current, struct action ***actions
 		}
 		else free_action(*current);
 	}
-	else if (!isspace(*line) && *line != '\0') {
+	/* bad formatted lines and unrecognized options (like purge)
+	else if (!isspace(*line) && *line != '\0')
 	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated
 	}
+	*/
 }
 
 int starts_with(char *line, char *string) {
