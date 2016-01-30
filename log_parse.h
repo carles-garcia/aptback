@@ -33,7 +33,7 @@ struct package {
   int automatic; // Only for INSTALL
 };	
 
-// modify to accept installed and upgraded at the same time (and possibly other combinations)
+// modify to accept installed and upgraded and removed at the same time (and maybe other combinations)
 struct action {
   struct date start_date;
   char *command;
@@ -41,6 +41,10 @@ struct action {
   struct package **packages;
   int num_pack;
   struct date end_date;
+  /*
+  int installed;
+  int removed;
+  int upgraded;*/
 };
 
 
