@@ -259,11 +259,12 @@ int main(int argc, char *argv[]) {
   int k, siz = 0;
   for (k = 0; k < num_sel; ++k)
     siz += (*selected)[k]->num_pack;
-  char *apt_argv[siz+2];
+  char *apt_argv[siz+2+1]; // +2 for the first 2, +1 for the last NULL
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
   else if (args.command == REMOVE) apt_argv[1] = "remove";
   else apt_argv[1] = "upgrade"; // should update before calling upgrade?
+  apt_argv[siz+2] = NULL;
   int num = 2;
   for (k = 0; k < num_sel; ++k) {
     int l;
