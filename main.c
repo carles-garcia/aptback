@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #include "log_parse.h"
 #include "debug.h"
@@ -270,6 +271,8 @@ int main(int argc, char *argv[]) {
     free_action(darray_get(&actions, i));
   free_darray(&actions);
   free_darray(&selected);
+  
+  wait(NULL);
   
   return 0;
   
