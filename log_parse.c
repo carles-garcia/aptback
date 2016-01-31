@@ -31,9 +31,12 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
       struct action *new_action = malloc(sizeof(struct action));
       if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
       copy_date(*current, new_action);
-      new_action->command = malloc(strlen((*current)->command) * sizeof(char));
-      if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
-      strcpy(new_action->command, (*current)->command);
+      if ((*current)->command != NULL) {
+	new_action->command = malloc(strlen((*current)->command) * sizeof(char));
+	if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
+	strcpy(new_action->command, (*current)->command);
+      }
+      else new_action->command = NULL;
       new_action->type = REMOVE;
       init_darray_pack(&(new_action->packages));
       get_packages(line, new_action);
@@ -49,9 +52,12 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
       struct action *new_action = malloc(sizeof(struct action));
       if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
       copy_date(*current, new_action);
-      new_action->command = malloc(strlen((*current)->command) * sizeof(char));
-      if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
-      strcpy(new_action->command, (*current)->command);
+      if ((*current)->command != NULL) {
+	new_action->command = malloc(strlen((*current)->command) * sizeof(char));
+	if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
+	strcpy(new_action->command, (*current)->command);
+      }
+      else new_action->command = NULL;
       new_action->type = UPGRADE;
       init_darray_pack(&(new_action->packages));
       get_packages(line, new_action);
