@@ -1,21 +1,14 @@
 #include "selection.h"
-#include "mem.h"
 
-int selection(struct arguments args, struct action **actions, int num_act, struct action ***selected, int *total_packages) {
-  int i, num_sel = 0;
-  *total_packages = 0;
-  for (i = 0; i < num_act; ++i) {
-    if (satisfies(args, actions[i])) {
-      ++num_sel;
-      *selected = realloc(*selected, num_sel * sizeof(struct action *));
-      if (*selected == NULL) eperror("Failed to realloc *selected at selection");
-      (*selected)[num_sel-1] = actions[i];
-      *total_packages += actions[i]->num_pack;
+int selection(struct arguments args, struct darray *actions, struct darray *selected) {
+  int total_packages = 0;
+  for (int i = 0; i < actions->size; ++i) {
+    if (satisfies(args, darray_get(actions, i))) {
+      darray_add(selected, darray_get(actions, i));
+      total_packages += darray_get(actions, i)->packages.size;
     }
-    else free_action(actions[i]); // don't free when using darray
-     
   }
-  return num_sel;
+  return total_packages;
 }
       
 int satisfies(struct arguments args, struct action *act) {

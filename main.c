@@ -9,7 +9,6 @@
 #include "log_parse.h"
 #include "debug.h"
 #include "selection.h"
-#include "mem.h"
 #include "darray.h"
 
 
@@ -18,7 +17,7 @@ const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback
 static char doc[] = 
 "aptback -- a utility to search, install and remove packages logged by apt";
 
-static char args_doc[] = "install|remove|upgrade|search";
+static char args_doc[] = "";
 
 static struct argp_option options[] = {
   {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
@@ -26,7 +25,13 @@ static struct argp_option options[] = {
   {"option",   	'o', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
   { 0 }
 };
-
+// --remove-installed -ri
+// --remove-upgraded -ru
+// --install-removed -ir ; can't be chars
+// aptback -i r,u -d 2015-7 -u 2015-7-21
+// aptback install -o removed -d 2015-7 -u 2015-7-21
+// aptback install --removed
+// aptback remove -iu
 
 int parse_date(char *arg, struct date *dat) {
   if (arg == NULL || *arg == '\0') return 0;
@@ -165,12 +170,12 @@ int main(int argc, char *argv[]) {
   /* Apt-log search and processing */
   
   struct darray actions;
-  init_darray(actions);
+  init_darray(&actions);
   
   DIR *apt_dir;
   struct dirent *in_file;
   FILE *log_file;
-
+  // remove directories is they exist because the program ended badly
   if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
@@ -235,9 +240,8 @@ int main(int argc, char *argv[]) {
   
   /* Actions selection based on input */
   struct darray selected;
-  init_darray(selected);
-  int total_packages = 0;
-  selection(args, &actions, &selected, &total_packages);
+  init_darray(&selected);
+  int total_packages = selection(args, &actions, &selected);
   
   /* Apt-get call */
   char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
@@ -246,11 +250,10 @@ int main(int argc, char *argv[]) {
   else if (args.command == REMOVE) apt_argv[1] = "remove";
   else apt_argv[1] = "upgrade"; // should update before calling upgrade?
   apt_argv[total_packages + 2] = NULL;
-  int num = 2, k;
-  for (k = 0; k < selected.size; ++k) {
-    int l;
-    for (l = 0; l < darray_get(selected, k)->num_pack; ++l) {
-      apt_argv[num++] = darray_get(selected, k)->packages[l]->name;
+  int num = 2;
+  for (int k = 0; k < selected.size; ++k) {
+    for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
+      apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
     }
   }
   int pid = fork();
@@ -263,15 +266,10 @@ int main(int argc, char *argv[]) {
   //debug_args(args);
   
   /* Free allocated memory left */
-  int i;
-  for (i = 0; i < num_sel; ++i)
-    free_action((*selected)[i]);
-  
-  free(*selected);
-  free(selected);
-  
-  free(*actions);
-  free(actions);
+  for (int i = 0; i < actions.size; ++i)
+    free_action(darray_get(&actions, i));
+  free_darray(&actions);
+  free_darray(&selected);
   
   return 0;
   

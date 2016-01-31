@@ -21,3 +21,4 @@ void debug_actions(struct action **actions, int num_act) {
     //}
   }
 }
+

@@ -1,7 +1,14 @@
 #include "log_parse.h"
-#include <stdio.h> 
-#include "mem.h"
 
+
+void copy_date(struct action *source, struct action *dest) {
+  dest->start_date.year = source->start_date.year;
+  dest->start_date.month = source->start_date.month;
+  dest->start_date.day = source->start_date.day;
+  dest->start_date.hour = source->start_date.hour;
+  dest->start_date.minute = source->start_date.minute;
+  dest->start_date.second = source->start_date.second;
+}
 
 void evaluate_line(char *line, struct action **current, struct darray *actions) {
   if (starts_with(line, "Start-Date")) {
@@ -10,6 +17,7 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
     init_action(new_action);
     *current = new_action;
     get_date(line, &(*current)->start_date);
+    darray_add(actions, *current);
   }
   else if (starts_with(line, "Commandline")) { //not all actions have one 
     get_command(line, *current);
@@ -19,16 +27,40 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
     get_packages(line, *current);
   }
   else if (starts_with(line, "Remove")) { //not all actions have one
-    (*current)->type = REMOVE;
-    get_packages(line, *current);
+    if ((*current)->type != UNDEFINED) {
+      struct action *new_action = malloc(sizeof(struct action));
+      if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
+      copy_date(*current, new_action);
+      new_action->command = malloc(strlen((*current)->command) * sizeof(char));
+      if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
+      strcpy(new_action->command, (*current)->command);
+      new_action->type = REMOVE;
+      init_darray_pack(&(new_action->packages));
+      get_packages(line, new_action);
+      darray_add(actions, new_action);
+    }
+    else {
+      (*current)->type = REMOVE;
+      get_packages(line, *current);
+    }
   }
   else if (starts_with(line, "Upgrade")) { // an action can have install and upgrade at the same time
-    (*current)->type = UPGRADE;
-    get_packages(line, *current);
-  }
-  else if (starts_with(line, "End-Date")) {
-    get_date(line, &(*current)->end_date);
-    darray_add(actions, *current);
+    if ((*current)->type != UNDEFINED) {
+      struct action *new_action = malloc(sizeof(struct action));
+      if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
+      copy_date(*current, new_action);
+      new_action->command = malloc(strlen((*current)->command) * sizeof(char));
+      if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
+      strcpy(new_action->command, (*current)->command);
+      new_action->type = UPGRADE;
+      init_darray_pack(&(new_action->packages));
+      get_packages(line, new_action);
+      darray_add(actions, new_action);
+    }
+    else {
+      (*current)->type = UPGRADE;
+      get_packages(line, *current);
+    }
   }
   /* bad formatted lines and unrecognized options (like purge)
    *	else if (!isspace(*line) && *line != '\0')
@@ -156,13 +188,7 @@ void get_packages(char *line, struct action *current) {
     }
     
     //package finished
-    //add package to action list here
-    current->num_pack += 1;
-    current->packages = realloc(current->packages, current->num_pack * sizeof(struct package *)); //maybe it would be more efficient to count "), " + 1
-    // which is the number of packages in the line and do only one big malloc
-    if (current->packages == NULL) eperror("Failed to realloc packages at get_packages");
-    current->packages[current->num_pack-1] = new_pack;
-    
+    darray_pack_add(&(current->packages), new_pack);
     
     line = line_aux;
     ++line; // now it's either in ' ' or in ',' or end
@@ -175,21 +201,4 @@ void get_packages(char *line, struct action *current) {
     }
     // now we are in new package name
   }
-}
-
-void init_action(struct action *current) {
-  memset(&current->start_date, 0, sizeof(struct date));
-  memset(&current->end_date, 0, sizeof(struct date));
-  init_darray(installed);
-  init_darray(removed);
-  init_darray(upgraded);
-  current->command = NULL;  
-}
-
-void init_pack(struct package *pack) {
-  pack->name = NULL;
-  pack->arch = NULL;
-  pack->version = NULL;
-  pack->newversion = NULL;
-  pack->automatic = 0;
 }

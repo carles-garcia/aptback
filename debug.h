@@ -1,7 +1,10 @@
 #pragma once
 
 #include <argp.h>
-#include "log_parse.h"
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "darray.h"
 
 void debug_args(struct arguments args);
 
