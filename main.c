@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "selection.h"
 #include "mem.h"
+#include "darray.h"
 
 
 const char *argp_program_version = "aptback v0.1";
@@ -163,11 +164,8 @@ int main(int argc, char *argv[]) {
 
   /* Apt-log search and processing */
   
-  struct action ***actions;
-  actions = malloc(sizeof(struct action **));
-  if (actions == NULL) eperror("Failed to malloc actions at main");
-  *actions = NULL;
-  int num_act = 0;
+  struct darray actions;
+  init_darray(actions);
   
   DIR *apt_dir;
   struct dirent *in_file;
@@ -224,7 +222,7 @@ int main(int argc, char *argv[]) {
     char *line = NULL;  
     size_t n = 0;
     while (getline(&line, &n, log_file) > 0) { 
-      evaluate_line(line, &current, actions, &num_act);
+      evaluate_line(line, &current, &actions);
       free(line);
       line = NULL;
       n = 0;
@@ -236,15 +234,10 @@ int main(int argc, char *argv[]) {
   if (rmdir(tmp_path) == -1) eperror("Failed to remove tmp directory");
   
   /* Actions selection based on input */
-  struct action ***selected;
-  selected = malloc(sizeof(struct action **));
-  if (selected == NULL) eperror("Failed to malloc selected at main");  
-  *selected = NULL;
+  struct darray selected;
+  init_darray(selected);
   int total_packages = 0;
-  int num_sel = selection(args, *actions, num_act, selected, &total_packages);
-  
-  // at this point some actions have been freed
-  // DON'T USE ***actions AGAIN
+  selection(args, &actions, &selected, &total_packages);
   
   /* Apt-get call */
   char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
@@ -254,10 +247,10 @@ int main(int argc, char *argv[]) {
   else apt_argv[1] = "upgrade"; // should update before calling upgrade?
   apt_argv[total_packages + 2] = NULL;
   int num = 2, k;
-  for (k = 0; k < num_sel; ++k) {
+  for (k = 0; k < selected.size; ++k) {
     int l;
-    for (l = 0; l < (*selected)[k]->num_pack; ++l) {
-      apt_argv[num++] = (*selected)[k]->packages[l]->name;
+    for (l = 0; l < darray_get(selected, k)->num_pack; ++l) {
+      apt_argv[num++] = darray_get(selected, k)->packages[l]->name;
     }
   }
   int pid = fork();

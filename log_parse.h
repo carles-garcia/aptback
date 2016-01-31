@@ -33,22 +33,19 @@ struct package {
   int automatic; // Only for INSTALL
 };	
 
-// modify to accept installed and upgraded and removed at the same time (and maybe other combinations)
 struct action {
   struct date start_date;
-  char *command;
-  enum action_type type;
-  struct package **packages;
-  int num_pack;
   struct date end_date;
-  /*
-  int installed;
-  int removed;
-  int upgraded;*/
+  char *command;
+  struct darray_pack installed;
+  struct darray_pack removed;
+  struct darray_pack upgraded;
+  // there is also purge
+
 };
 
 
-void evaluate_line(char *line, struct action **current, struct action ***actions, int *num_act);
+void evaluate_line(char *line, struct action **current, struct darray *actions);
 
 int starts_with(char *line, char *string);
 

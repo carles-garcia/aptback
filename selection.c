@@ -12,7 +12,7 @@ int selection(struct arguments args, struct action **actions, int num_act, struc
       (*selected)[num_sel-1] = actions[i];
       *total_packages += actions[i]->num_pack;
     }
-    else free_action(actions[i]);
+    else free_action(actions[i]); // don't free when using darray
      
   }
   return num_sel;

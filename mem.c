@@ -20,3 +20,24 @@ void eperror(char *msg) {
   perror(msg);
   exit(EXIT_FAILURE);
 }
+
+/*
+
+void free_action(struct action *action) {
+  free(action->command);
+  free_darray_pack(actions->upg_packages);
+  free_darray_pack(actions->ins_packages);
+  free_darray_pack(actions->rem_packages);
+  free(action); 
+}
+
+void free_pack(struct package *pack) {
+  free(pack->name);
+  free(pack->arch);
+  free(pack->version);
+  if (pack->newversion != NULL) free(pack->newversion);
+  free(pack);
+}
+
+*/
+  
