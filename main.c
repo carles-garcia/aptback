@@ -160,8 +160,7 @@ void init_args(struct arguments *args) {
 
 int main(int argc, char *argv[]) {
   const char *apt_path = "/var/log/apt/";
-  const char *tmp_path = "/tmp/aptback/";
-  const char *pipe_path = "/tmp/aptback/pipe";
+
   
   /* Input arguments processing */
   struct arguments args;
@@ -180,10 +179,14 @@ int main(int argc, char *argv[]) {
   if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
-  if (mkdir(tmp_path, S_IRWXU | S_IROTH | S_IXOTH) == -1) // 0705 so zcat can read from the pipe
-    eperror("Failed to create tmp directory");
-  if (mknod(pipe_path, S_IFIFO | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH, 0) != 0)
-    eperror("Failed to create pipe");
+  /*
+  char tmp_path[] = "/tmp/XXXXXX";
+  tmp_path = mkdtemp(tmp_path);
+  if (tmp_path == NULL) eperror("Failed to create temporary directory");
+  char pipe_path[strlen(tmp_path) + 6]; // 1 /, 4 pipe, 1 '\0'
+  sprintf(pipe_path, "%s%s", tmp_path, "/pipe");
+  */
+ 
   
   while ((in_file = readdir(apt_dir))) {
     if (!strcmp (in_file->d_name, "."))
@@ -192,28 +195,23 @@ int main(int argc, char *argv[]) {
       continue;
     
     if (starts_with(in_file->d_name, "history.log.")) { 
+      int fildes[2];
+      if (pipe(fildes) == -1) eperror("Failed to create pipe");
       int pid = fork();
       if (pid == 0) {
-	int fd = open(pipe_path, O_WRONLY);
-	if (fd == -1) eperror("Failed to open pipe to write");
-	if (dup2(fd, 1) == -1) // change output channel to pipe
-	  eperror("Failed to dup2 pipe");
+	if (close(fildes[0]) == -1) eperror("Failed to close read fildes");
+	if (dup2(fildes[1], 1) == -1) eperror("Failed to dup2 pipe");
+	if (close(fildes[1]) == -1) eperror("Failed to close fildes[1] after dup2");
 	char path[strlen(apt_path) + strlen(in_file->d_name)];
 	sprintf(path, "%s%s", apt_path, in_file->d_name);
 	if (execlp("zcat", "zcat", path, NULL) == -1)
 	  eperror("Failed to exec to zcat");
       }
       else if (pid == -1) eperror("Failed to fork process to execute zcat");
-      /*else { This won't work because pipes are 64k in size and logs can be bigger
-	int stat = 0;
-	if (wait(&stat) == -1) eperror("Failed to wait for zcat");
-	if (WIFEXITED(stat) == 0) eperror("zcat exited abnormally");
-	log_file = fopen(pipe_path, "r");
-	if (log_file == NULL) eperror("Failed to open pipe to read");
-      }*/
       else {
-	log_file = fopen(pipe_path, "r");
-	if (log_file == NULL) eperror("Failed to open pipe to read");
+	if (close(fildes[1]) == -1) eperror("Failed to close write fildes");
+	log_file = fdopen(fildes[0], "r");
+	if (log_file == NULL) eperror("Failed to fdopen pipe to read");
       }
     }
     else if (strcmp(in_file->d_name, "history.log") == 0) {
@@ -236,15 +234,17 @@ int main(int argc, char *argv[]) {
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
   }
   if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
+  /*
   if (unlink(pipe_path) == -1) eperror("Failed to remove pipe");
   if (rmdir(tmp_path) == -1) eperror("Failed to remove tmp directory");
+  */
   
   /* Actions selection based on input */
   struct darray selected;
   init_darray(&selected);
   int total_packages = selection(args, &actions, &selected);
   
-  /* Apt-get call */
+  /* Apt-get call */ // should ask for confirmation before calling apt if action is install
   char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
   apt_argv[0] = "apt-get";
   if (args.command == INSTALL) apt_argv[1] = "install";
@@ -272,8 +272,8 @@ int main(int argc, char *argv[]) {
   free_darray(&actions);
   free_darray(&selected);
   
-  wait(NULL);
-  
+  while (wait(NULL) != -1);
+
   return 0;
   
 }
