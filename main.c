@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
       int status;
       if (waitpid(pid, &status, 0) == -1) eperror("waitpid failed");
       if (WIFEXITED(status) == 0) {
-	fprintf(stderr, "zcat finished abnormally");
+	fprintf(stderr, "\nzcat finished abnormally\n");
 	exit(EXIT_FAILURE);
       }
     }
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
   int status;
   if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
   if (WIFEXITED(status) == 0) {
-    fprintf(stderr, "apt-get finished abnormally");
+    fprintf(stderr, "\napt-get finished abnormally\n");
     exit(EXIT_FAILURE);
   }
 
