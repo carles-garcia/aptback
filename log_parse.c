@@ -23,7 +23,7 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
     get_command(line, *current);
   }
   else if (starts_with(line, "Install")) { //not all actions have one
-    (*current)->type = INSTALL;
+    (*current)->type = INSTALL; // maybe should do copy too like remove and upgrade
     get_packages(line, *current);
   }
   else if (starts_with(line, "Remove")) { //not all actions have one
@@ -85,36 +85,42 @@ int starts_with(char *line, char *string) {
 
 void get_date(char *line, struct date *dat) {
   while (*line++ != ' '); //pass space
-  char year[4];
+  char year[5];
   int i = 0;
   while (i < 4) year[i++] = *line++;
+  year[i] = '\0';
   dat->year = atoi(year);
   ++line;
-  char month[2];
+  char month[3];
   i = 0;
   while (i < 2) month[i++] = *line++;
+  month[i] = '\0';
   dat->month = atoi(month);
   ++line;
-  char day[2];
+  char day[3];
   i = 0;
   while (i < 2) day[i++] = *line++;
+  day[i] = '\0';
   dat->day = atoi(day);
   ++line;
   
   while (isspace(*line)) ++line;
-  char hour[2];
+  char hour[3];
   i = 0;
   while (i < 2) hour[i++] = *line++;
+  hour[i] = '\0';
   dat->hour = atoi(hour);
   ++line;
-  char minute[2];
+  char minute[3];
   i = 0;
   while (i < 2) minute[i++] = *line++;
+  minute[i] = '\0';
   dat->minute = atoi(minute);
   ++line;
-  char second[2];
+  char second[3];
   i = 0;
   while (i < 2) second[i++] = *line++;
+  second[i] = '\0';
   dat->second = atoi(second);
   
 }
