@@ -161,7 +161,6 @@ void init_args(struct arguments *args) {
 int main(int argc, char *argv[]) {
   const char *apt_path = "/var/log/apt/";
 
-  
   /* Input arguments processing */
   struct arguments args;
   init_args(&args);
@@ -175,29 +174,17 @@ int main(int argc, char *argv[]) {
   DIR *apt_dir;
   struct dirent *in_file;
   FILE *log_file;
-  // remove directories is they exist because the program ended badly
+  
   if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");
   /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
    * parse all logs, only until we find the max date */
-  /*
-  char tmp_path[] = "/tmp/XXXXXX";
-  tmp_path = mkdtemp(tmp_path);
-  if (tmp_path == NULL) eperror("Failed to create temporary directory");
-  char pipe_path[strlen(tmp_path) + 6]; // 1 /, 4 pipe, 1 '\0'
-  sprintf(pipe_path, "%s%s", tmp_path, "/pipe");
-  */
- 
   
-  while ((in_file = readdir(apt_dir))) {
-    if (!strcmp (in_file->d_name, "."))
-      continue;
-    if (!strcmp (in_file->d_name, ".."))    
-      continue;
-    
+  while ((in_file = readdir(apt_dir))) {  
+    int pid = -1;
     if (starts_with(in_file->d_name, "history.log.")) { 
       int fildes[2];
       if (pipe(fildes) == -1) eperror("Failed to create pipe");
-      int pid = fork();
+      pid = fork();
       if (pid == 0) {
 	if (close(fildes[0]) == -1) eperror("Failed to close read fildes");
 	if (dup2(fildes[1], 1) == -1) eperror("Failed to dup2 pipe");
@@ -232,12 +219,16 @@ int main(int argc, char *argv[]) {
       n = 0;
     } 
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
+    if (pid != -1) {
+      int status;
+      if (waitpid(pid, &status, 0) == -1) eperror("waitpid failed");
+      if (WIFEXITED(status) == 0) {
+	fprintf(stderr, "zcat finished abnormally");
+	exit(EXIT_FAILURE);
+      }
+    }
   }
   if (closedir(apt_dir) == -1) eperror("Failed to close log directory");
-  /*
-  if (unlink(pipe_path) == -1) eperror("Failed to remove pipe");
-  if (rmdir(tmp_path) == -1) eperror("Failed to remove tmp directory");
-  */
   
   /* Actions selection based on input */
   struct darray selected;
@@ -272,7 +263,12 @@ int main(int argc, char *argv[]) {
   free_darray(&actions);
   free_darray(&selected);
   
-  while (wait(NULL) != -1);
+  int status;
+  if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
+  if (WIFEXITED(status) == 0) {
+    fprintf(stderr, "apt-get finished abnormally");
+    exit(EXIT_FAILURE);
+  }
 
   return 0;
   
