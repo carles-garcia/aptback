@@ -98,7 +98,8 @@ int parse_option(char *arg, struct arguments *arguments) {
     if (c != 0) {
       char *buffer = malloc((c+1) * sizeof(char));
       if (buffer == NULL) eperror("Failed to malloc at parse_option");
-      for (int i = 0; i < c; ++i) buffer[i] = arg[i];
+      int i;
+      for (i = 0; i < c; ++i) buffer[i] = arg[i];
       buffer[i] = '\0';
       if (starts_with("installed", buffer) == 0) arguments->installed = 1;
       else if (starts_with("removed", buffer) == 0) arguments->removed = 1;
