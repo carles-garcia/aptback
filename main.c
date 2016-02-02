@@ -101,9 +101,9 @@ int parse_option(char *arg, struct arguments *arguments) {
       int i;
       for (i = 0; i < c; ++i) buffer[i] = arg[i];
       buffer[i] = '\0';
-      if (starts_with("installed", buffer) == 0) arguments->installed = 1;
-      else if (starts_with("removed", buffer) == 0) arguments->removed = 1;
-      else if (starts_with("upgraded", buffer) == 0) arguments->upgraded = 1;
+      if (starts_with("installed", buffer)) arguments->installed = 1;
+      else if (starts_with("removed", buffer)) arguments->removed = 1;
+      else if (starts_with("upgraded", buffer)) arguments->upgraded = 1;
       else {
 	free(buffer);
 	return 0;

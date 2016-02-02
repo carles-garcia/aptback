@@ -10,7 +10,7 @@ void print_search(struct darray *selected) {
       else if (a->type == REMOVE) printf("remove ");
       else printf("upgrade ");
       printf("%s %s %s ", p->name, p->arch, p->version);
-      if (a->type == INSTALL) printf("automatic");
+      if (p->automatic) printf("automatic");
       else if (p->newversion != NULL) printf(" -> %s", p->newversion);
       printf("\n");
     }

@@ -14,7 +14,7 @@ int selection(struct arguments args, struct darray *actions, struct darray *sele
 int satisfies(struct arguments args, struct action *act) {
   if ((args.installed && act->type == INSTALL)
     || (args.removed && act->type == REMOVE) 
-    || (args.installed && act->type == INSTALL)) { //if UNDEFINED will return 0
+    || (args.upgraded && act->type == UPGRADE)) { //if UNDEFINED will return 0
     if (args.until.year != -1) {
       if (datecmp(args.dat, act->date) <= 0 && datecmp(args.until, act->date) >= 0) return 1;
       else return 0;
