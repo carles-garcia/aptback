@@ -13,7 +13,7 @@ struct date {
   int second;
 };
 
-enum action_type { INSTALL, REMOVE, UPGRADE, UNDEFINED }; // there is also purge and maybe others
+enum action_type { INSTALL, REMOVE, UPGRADE, SEARCH, UNDEFINED }; // there is also purge and maybe others
 
 struct arguments {
   struct date dat, until;

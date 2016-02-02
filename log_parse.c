@@ -71,8 +71,7 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
   /* bad formatted lines and unrecognized options (like purge)
    *	else if (!isspace(*line) && *line != '\0')
    *	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated
-}
-*/
+   */
 }
 
 int starts_with(char *line, char *string) {
@@ -80,7 +79,7 @@ int starts_with(char *line, char *string) {
   while(*string != '\0')
     if(*string++ != *line++)
       return 0;
-    return 1;
+  return 1;
 }
 
 void get_date(char *line, struct date *dat) {

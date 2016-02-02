@@ -89,30 +89,31 @@ int parse_date(char *arg, struct date *dat) {
 
 int parse_option(char *arg, struct arguments *arguments) {
   char *aux = arg;
-  int c;
   while (1) {
-    c = 0;
+    int c = 0;
     while (isalpha(*aux)) {
       ++aux;
       ++c;
     }
-    char *buffer = malloc((c+1) * sizeof(char));
-    if (buffer == NULL) eperror("Failed to malloc at parse_option");
-    int i;
-    for (i = 0; i < c; ++i) buffer[i] = arg[i];
-    buffer[i] = '\0';
-    if (strcmp("installed", buffer) == 0) arguments->installed = 1;
-    else if (strcmp("removed", buffer) == 0) arguments->removed = 1;
-    else if (strcmp("upgraded", buffer) == 0) arguments->upgraded = 1;
-    else {
+    if (c != 0) {
+      char *buffer = malloc((c+1) * sizeof(char));
+      if (buffer == NULL) eperror("Failed to malloc at parse_option");
+      for (int i = 0; i < c; ++i) buffer[i] = arg[i];
+      buffer[i] = '\0';
+      if (starts_with("installed", buffer) == 0) arguments->installed = 1;
+      else if (starts_with("removed", buffer) == 0) arguments->removed = 1;
+      else if (starts_with("upgraded", buffer) == 0) arguments->upgraded = 1;
+      else {
+	free(buffer);
+	return 0;
+      }
       free(buffer);
-      return 0;
+      if (*aux == '\0') break;
+      else if (*aux != ',') return 0;
+      ++aux;
+      arg = aux;
     }
-    free(buffer);
-    if (*aux == '\0') break;
-    else if (*aux != ',') return 0;
-    ++aux;
-    arg = aux;
+    else return 0;
   }
   return 1;
 }
@@ -235,24 +236,35 @@ int main(int argc, char *argv[]) {
   init_darray(&selected);
   int total_packages = selection(args, &actions, &selected);
   
-  /* Apt-get call */ // should ask for confirmation before calling apt if action is install
-  char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
-  apt_argv[0] = "apt-get";
-  if (args.command == INSTALL) apt_argv[1] = "install";
-  else if (args.command == REMOVE) apt_argv[1] = "remove";
-  else apt_argv[1] = "upgrade"; // should update before calling upgrade?
-  apt_argv[total_packages + 2] = NULL;
-  int num = 2;
-  for (int k = 0; k < selected.size; ++k) {
-    for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
-      apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
+  if (total_packages != 0) {
+    /* Apt-get call */ // should ask for confirmation before calling apt if action is install
+    char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
+    apt_argv[0] = "apt-get";
+    if (args.command == INSTALL) apt_argv[1] = "install";
+    else if (args.command == REMOVE) apt_argv[1] = "remove";
+    else apt_argv[1] = "upgrade"; // should update before calling upgrade?
+    apt_argv[total_packages + 2] = NULL;
+    int num = 2;
+    for (int k = 0; k < selected.size; ++k) {
+      for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
+	apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
+      }
+    }
+    int pid = fork();
+    if (pid == 0) {
+      if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
+    }
+    else if (pid == -1) eperror("Failed to fork process to execute apt-get");
+    else {
+      int status;
+      if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
+      if (WIFEXITED(status) == 0) {
+	fprintf(stderr, "\napt-get finished abnormally\n");
+	exit(EXIT_FAILURE);
+      }
     }
   }
-  int pid = fork();
-  if (pid == 0) {
-    if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
-  }
-  else if (pid == -1) eperror("Failed to fork process to execute apt-get");
+  else printf("No packages match the arguments");
   
   //debug_actions(*selected, num_sel);
   //debug_args(args);
@@ -262,13 +274,6 @@ int main(int argc, char *argv[]) {
     free_action(darray_get(&actions, i));
   free_darray(&actions);
   free_darray(&selected);
-  
-  int status;
-  if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
-  if (WIFEXITED(status) == 0) {
-    fprintf(stderr, "\napt-get finished abnormally\n");
-    exit(EXIT_FAILURE);
-  }
 
   return 0;
   
