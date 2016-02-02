@@ -69,7 +69,7 @@ void free_pack(struct package *pack) {
 }
 
 void init_action(struct action *current) {
-  memset(&current->start_date, 0, sizeof(struct date));
+  memset(&current->date, 0, sizeof(struct date));
   init_darray_pack(&(current->packages));
   current->command = NULL;
   current->type = UNDEFINED;

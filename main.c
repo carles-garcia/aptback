@@ -11,7 +11,7 @@
 #include "debug.h"
 #include "selection.h"
 #include "darray.h"
-
+#include "print_search.h"
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
@@ -140,6 +140,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       if (strcmp(arg, "remove") == 0) arguments->command = REMOVE;
       else if (strcmp(arg, "install") == 0) arguments->command = INSTALL;
       else if (strcmp(arg, "upgrade") == 0) arguments->command = UPGRADE;
+      else if (strcmp(arg, "search") == 0) arguments->command = SEARCH;
       else argp_usage(state);
       break;
     case ARGP_KEY_END:
@@ -238,30 +239,33 @@ int main(int argc, char *argv[]) {
   int total_packages = selection(args, &actions, &selected);
   
   if (total_packages != 0) {
-    /* Apt-get call */ // should ask for confirmation before calling apt if action is install
-    char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
-    apt_argv[0] = "apt-get";
-    if (args.command == INSTALL) apt_argv[1] = "install";
-    else if (args.command == REMOVE) apt_argv[1] = "remove";
-    else apt_argv[1] = "upgrade"; // should update before calling upgrade?
-    apt_argv[total_packages + 2] = NULL;
-    int num = 2;
-    for (int k = 0; k < selected.size; ++k) {
-      for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
-	apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
-      }
-    }
-    int pid = fork();
-    if (pid == 0) {
-      if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
-    }
-    else if (pid == -1) eperror("Failed to fork process to execute apt-get");
+    if (args.command == SEARCH) print_search(&selected);
     else {
-      int status;
-      if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
-      if (WIFEXITED(status) == 0) {
-	fprintf(stderr, "\napt-get finished abnormally\n");
-	exit(EXIT_FAILURE);
+      /* Apt-get call */ // should ask for confirmation before calling apt if action is install
+      char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
+      apt_argv[0] = "apt-get";
+      if (args.command == INSTALL) apt_argv[1] = "install";
+      else if (args.command == REMOVE) apt_argv[1] = "remove";
+      else apt_argv[1] = "upgrade"; // should update before calling upgrade?
+      apt_argv[total_packages + 2] = NULL;
+      int num = 2;
+      for (int k = 0; k < selected.size; ++k) {
+	for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
+	  apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
+	}
+      }
+      int pid = fork();
+      if (pid == 0) {
+	if (execvp(apt_argv[0], apt_argv) == -1) eperror("Failed to exec to apt-get"); // if sudo is needed it will tell
+      }
+      else if (pid == -1) eperror("Failed to fork process to execute apt-get");
+      else {
+	int status;
+	if (waitpid(pid, &status, 0) == -1) eperror("waitpid for apt-get failed");
+	if (WIFEXITED(status) == 0) {
+	  fprintf(stderr, "\napt-get finished abnormally\n");
+	  exit(EXIT_FAILURE);
+	}
       }
     }
   }

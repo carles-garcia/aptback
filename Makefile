@@ -4,8 +4,8 @@ CFLAGS = -g -ggdb -Wall -std=gnu99
 
 all: aptback
 
-aptback: main.o log_parse.o debug.o selection.o darray.o
-	$(CC) $(CFLAGS) -o main.exe main.o log_parse.o debug.o selection.o darray.o
+aptback: main.o log_parse.o debug.o selection.o darray.o print_search.o
+	$(CC) $(CFLAGS) -o main.exe main.o log_parse.o debug.o selection.o darray.o print_search.o
 main.o: main.c 
 	$(CC) $(CFLAGS) -c main.c
 	
@@ -21,5 +21,8 @@ selection.o: selection.c
 darray.o: darray.c
 	$(CC) $(CFLAGS) -c darray.c
 	
+print_search.o: print_search.c
+	$(CC) $(CFLAGS) -c print_search.c
+	
 clean: 
-	rm main.exe main.o log_parse.o debug.o selection.o darray.o
+	rm main.exe main.o log_parse.o debug.o selection.o darray.o print_search.o

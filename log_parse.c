@@ -2,12 +2,12 @@
 
 
 void copy_date(struct action *source, struct action *dest) {
-  dest->start_date.year = source->start_date.year;
-  dest->start_date.month = source->start_date.month;
-  dest->start_date.day = source->start_date.day;
-  dest->start_date.hour = source->start_date.hour;
-  dest->start_date.minute = source->start_date.minute;
-  dest->start_date.second = source->start_date.second;
+  dest->date.year = source->date.year;
+  dest->date.month = source->date.month;
+  dest->date.day = source->date.day;
+  dest->date.hour = source->date.hour;
+  dest->date.minute = source->date.minute;
+  dest->date.second = source->date.second;
 }
 
 void evaluate_line(char *line, struct action **current, struct darray *actions) {
@@ -16,7 +16,7 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
     if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
     init_action(new_action);
     *current = new_action;
-    get_date(line, &(*current)->start_date);
+    get_date(line, &(*current)->date);
     darray_add(actions, *current);
   }
   else if (starts_with(line, "Commandline")) { //not all actions have one 

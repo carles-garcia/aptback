@@ -37,7 +37,8 @@ struct darray_pack {
 };
 
 struct action {
-  struct date start_date;
+  // start date (end date is ignored when parsing, not useful. Also, start date of installing, not downloading). 
+  struct date date; 
   char *command;
   struct darray_pack packages;
   enum action_type type;
