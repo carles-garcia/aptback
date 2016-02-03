@@ -16,3 +16,15 @@ void print_search(struct darray *selected) {
     }
   }
 }
+
+void print_preview(struct darray *selected) {
+  for (int i = 0; i < selected->size; ++i) {
+    struct action *a = darray_get(selected, i);
+    for (int j = 0; j < a->packages.size; ++j) {
+      struct package *p = darray_pack_get(&a->packages, j);
+      printf("%s ", p->name);
+    }
+  }
+  printf("\n\n");
+}
+

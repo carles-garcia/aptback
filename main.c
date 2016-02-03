@@ -25,7 +25,7 @@ static struct argp_option options[] = {
   {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
   {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
   {"select",   	's', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
-  {"yes",	'y',	0,	0, "When calling apt-get, assume Yes to all queries and do not prompt" },
+  {"yes",	'y',	0,	0, "Always call apt-get, assume Yes to all queries and do not prompt" },
   {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
   {"usage",	-1,	0,	OPTION_HIDDEN|OPTION_ALIAS, 0},
   { 0 }
@@ -250,6 +250,18 @@ int main(int argc, char *argv[]) {
       print_search(&selected);
     }
     else {
+      if (!args.yes) {
+	printf("%d packages selected:\n", total_packages);
+	print_preview(&selected);
+	char input = 0;
+	do {
+	  printf("Call apt-get? [y/n]\n");
+	  input = getchar();
+	  if (input == 'n') exit(EXIT_FAILURE);
+	}
+	while (input != 'y');
+      }
+      
       /* Apt-get call */ // should ask for confirmation before calling apt if action is install
       int argv_size = total_packages + 2 + 1;  // +2 for the first 2, +1 for the last NULL
       if (args.yes) ++argv_size;
