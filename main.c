@@ -170,18 +170,13 @@ int main(int argc, char *argv[]) {
   argp_parse(&argp, argc, argv, 0, 0, &args);
 
   /* Apt-log search and processing */
-  
   struct darray actions;
   init_darray(&actions);
-  
   DIR *apt_dir;
   struct dirent *in_file;
   FILE *log_file;
   
-  if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");
-  /* future optimization: since log files are sorted by date, if logs are parsed by date, then there is no need to
-   * parse all logs, only until we find the max date */
-  
+  if ((apt_dir = opendir(apt_path)) == NULL) eperror("Failed to open log directory");  
   while ((in_file = readdir(apt_dir))) {  
     int pid = -1;
     if (starts_with(in_file->d_name, "history.log.")) { 
@@ -274,9 +269,6 @@ int main(int argc, char *argv[]) {
   }
   else printf("No packages match the arguments");
   
-  //debug_actions(*selected, num_sel);
-  //debug_args(args);
-  
   /* Free allocated memory left */
   for (int i = 0; i < actions.size; ++i)
     free_action(darray_get(&actions, i));
@@ -284,5 +276,4 @@ int main(int argc, char *argv[]) {
   free_darray(&selected);
 
   return 0;
-  
 }

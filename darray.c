@@ -51,11 +51,9 @@ void free_darray_pack(struct darray_pack *d) {
 
 
 void free_action(struct action *actions) {
-  // Free memory allocated for actions no longer needed
-  // It was allocated in evaluate_line() from log_parse.c
   free(actions->command);
   for (int j = 0; j < actions->packages.size; ++j)
-    free(darray_pack_get(&actions->packages, j));
+    free_pack(darray_pack_get(&actions->packages, j));
   free_darray_pack(&actions->packages);
   free(actions); 
 }
