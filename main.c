@@ -239,7 +239,10 @@ int main(int argc, char *argv[]) {
   int total_packages = selection(args, &actions, &selected);
   
   if (total_packages != 0) {
-    if (args.command == SEARCH) print_search(&selected);
+    if (args.command == SEARCH) {
+      qsort(selected.array, selected.size, sizeof(struct action *), actioncmp);
+      print_search(&selected);
+    }
     else {
       /* Apt-get call */ // should ask for confirmation before calling apt if action is install
       char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL

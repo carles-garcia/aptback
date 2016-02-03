@@ -58,4 +58,10 @@ int datecmp(struct date first, struct date second) {
     }
   }
 }
+
+int actioncmp(const void *a, const void *b) {
+  const struct action *act1 = *(const struct action **)a;
+  const struct action *act2 = *(const struct action **)b;
+  return datecmp(act1->date, act2->date);
+}
 	
