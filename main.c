@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 	print_preview(&selected);
 	char input = 0;
 	do {
-	  printf("Call apt-get? [y/n]\n");
+	  if (input != '\n') printf("Call apt-get? [y/n]\n");
 	  input = getchar();
 	  if (input == 'n') exit(EXIT_FAILURE);
 	}
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  else printf("No packages match the arguments");
+  else printf("No packages match the arguments\n");
   
   /* Free allocated memory left */
   for (int i = 0; i < actions.size; ++i)
