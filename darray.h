@@ -21,6 +21,7 @@ struct arguments {
   int installed;
   int upgraded;
   int removed;
+  int yes;
 };
 
 struct package {

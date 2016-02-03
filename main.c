@@ -16,23 +16,20 @@
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] = 
-"aptback -- a utility to search, install and remove packages logged by apt";
+"aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
+static char usage[] = "Usage: aptback search|install|remove|upgrade -s [[installed,removed,upgraded]] -d DATE [-u DATE]";
 static char args_doc[] = "";
 
 static struct argp_option options[] = {
   {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
   {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
-  {"option",   	'o', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
+  {"select",   	's', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
+  {"yes",	'y',	0,	0, "When calling apt-get, assume Yes to all queries and do not prompt" },
+  {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
+  {"usage",	-1,	0,	OPTION_HIDDEN|OPTION_ALIAS, 0},
   { 0 }
 };
-// --remove-installed -ri
-// --remove-upgraded -ru
-// --install-removed -ir ; can't be chars
-// aptback -i r,u -d 2015-7 -u 2015-7-21
-// aptback install -o removed -d 2015-7 -u 2015-7-21
-// aptback install --removed
-// aptback remove -iu
 
 int parse_date(char *arg, struct date *dat) {
   if (arg == NULL || *arg == '\0') return 0;
@@ -119,6 +116,11 @@ int parse_option(char *arg, struct arguments *arguments) {
   return 1;
 }
   
+  static void help(struct argp_state *state) {
+  fprintf(stderr, "%s\n\n%s\n", doc, usage);
+  argp_state_help(state, stderr, ARGP_HELP_LONG|ARGP_HELP_BUG_ADDR);
+  exit(EXIT_FAILURE);
+}
   
 /* aptback remove -o installed,upgraded -d 2015-11-09-17-54-22 -u 2015-12-19
  * date format: 2015-11-09-17-54-22
@@ -128,23 +130,30 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   switch (key)
   {
     case 'd':
-      if (!parse_date(arg, &arguments->dat)) argp_usage(state);
+      if (!parse_date(arg, &arguments->dat)) help(state);
       break;
     case 'u':
-      if (!parse_date(arg, &arguments->until)) argp_usage(state);
+      if (!parse_date(arg, &arguments->until)) help(state);
       break;
-    case 'o':
-      if (!parse_option(arg, arguments)) argp_usage(state);
+    case 's':
+      if (!parse_option(arg, arguments)) help(state);
+      break;
+    case 'y':
+      arguments->yes = 1;
+      break;
+    case -1:
+      help(state);
       break;
     case ARGP_KEY_ARG:
       if (strcmp(arg, "remove") == 0) arguments->command = REMOVE;
       else if (strcmp(arg, "install") == 0) arguments->command = INSTALL;
       else if (strcmp(arg, "upgrade") == 0) arguments->command = UPGRADE;
       else if (strcmp(arg, "search") == 0) arguments->command = SEARCH;
-      else argp_usage(state);
+      else help(state);
       break;
     case ARGP_KEY_END:
-      if (state->arg_num != 1) argp_usage(state);
+      if (state->arg_num != 1) help(state);
+      if (arguments->dat.year == -1) help(state);
       break;
     default:
       return ARGP_ERR_UNKNOWN;
@@ -159,6 +168,7 @@ void init_args(struct arguments *args) {
   args->until.year = args->until.month = args->until.day = args->until.hour = args->until.minute = args->until.second = -1;
   args->dat.year = args->dat.month = args->dat.day = args->dat.hour = args->dat.minute = args->dat.second = -1;
   args->command = UNDEFINED;
+  args->yes = 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -241,13 +251,16 @@ int main(int argc, char *argv[]) {
     }
     else {
       /* Apt-get call */ // should ask for confirmation before calling apt if action is install
-      char *apt_argv[total_packages + 2 + 1]; // +2 for the first 2, +1 for the last NULL
-      apt_argv[0] = "apt-get";
-      if (args.command == INSTALL) apt_argv[1] = "install";
-      else if (args.command == REMOVE) apt_argv[1] = "remove";
-      else apt_argv[1] = "upgrade"; // should update before calling upgrade?
-      apt_argv[total_packages + 2] = NULL;
-      int num = 2;
+      int argv_size = total_packages + 2 + 1;  // +2 for the first 2, +1 for the last NULL
+      if (args.yes) ++argv_size;
+      char *apt_argv[argv_size];
+      int num = 0;
+      apt_argv[num++] = "apt-get";
+      if (args.command == INSTALL) apt_argv[num++] = "install";
+      else if (args.command == REMOVE) apt_argv[num++] = "remove";
+      else apt_argv[num++] = "upgrade"; // should update before calling upgrade?
+      if (args.yes) apt_argv[num++] = "--yes";
+      apt_argv[argv_size-1] = NULL;
       for (int k = 0; k < selected.size; ++k) {
 	for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
 	  apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
