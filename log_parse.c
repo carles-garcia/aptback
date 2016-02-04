@@ -15,7 +15,7 @@ static struct action *duplicate(const struct action *current) {
   if (new_action == NULL) eperror("Failed to malloc new_action at duplicate");
   copy_date(current, new_action);
   if (current->command != NULL) {
-    new_action->command = malloc(strlen(current->command) * sizeof(char));
+    new_action->command = malloc((strlen(current->command) + 1) * sizeof(char));
     if (new_action->command == NULL) eperror("Failed to malloc new_action command at duplicate");
     strcpy(new_action->command, current->command);
   }

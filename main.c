@@ -21,8 +21,8 @@ static char doc[] =
 
 static char usage[] = 
 "Usage: aptback [-e|-v] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
-        aptback install [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
-        aptback remove [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n";
+       aptback install [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
+       aptback remove [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n";
 
 static char args_doc[] = "";
 
