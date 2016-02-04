@@ -1,3 +1,8 @@
+/*
+ * Type definitions and related functions.
+ * Includes eperror function
+ * 
+ */
 #pragma once
 
 #include <stdlib.h>
@@ -13,15 +18,20 @@ struct date {
   int second;
 };
 
-enum action_type { INSTALL, REMOVE, UPGRADE, SEARCH, UNDEFINED }; // there is also purge and maybe others
+enum action_type { INSTALL, REMOVE, UPGRADE, PURGE, SEARCH, UNDEFINED }; 
 
 struct arguments {
   struct date dat, until;
-  enum action_type command;
+  enum action_type option;
   int installed;
   int upgraded;
   int removed;
+  int purged;
   int yes;
+  int automatic;
+  int manual;
+  int exp;
+  int version;
 };
 
 struct package {
@@ -60,8 +70,6 @@ void free_darray(struct darray *d);
 
 
 
-
-
 void init_darray_pack(struct darray_pack *d);
 
 void darray_pack_add(struct darray_pack *d, struct package *obj);
@@ -71,6 +79,7 @@ struct package* darray_pack_get(struct darray_pack *d, int i);
 void free_darray_pack(struct darray_pack *d);
 
 
+
 void free_action(struct action *actions);
 
 void free_pack(struct package *pack);
@@ -78,5 +87,7 @@ void free_pack(struct package *pack);
 void init_action(struct action *current);
 
 void init_pack(struct package *pack);
+
+
 
 void eperror(char *msg);

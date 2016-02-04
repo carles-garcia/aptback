@@ -1,6 +1,6 @@
 #include "selection.h"
 
-int selection(struct arguments args, struct darray *actions, struct darray *selected) {
+int selection(const struct arguments *args, struct darray *actions, struct darray *selected) {
   int total_packages = 0;
   for (int i = 0; i < actions->size; ++i) {
     if (satisfies(args, darray_get(actions, i))) {
@@ -11,23 +11,24 @@ int selection(struct arguments args, struct darray *actions, struct darray *sele
   return total_packages;
 }
       
-int satisfies(struct arguments args, struct action *act) {
-  if ((args.installed && act->type == INSTALL)
-    || (args.removed && act->type == REMOVE) 
-    || (args.upgraded && act->type == UPGRADE)) { //if UNDEFINED will return 0
-    if (args.until.year != -1) {
-      if (datecmp(args.dat, act->date) <= 0 && datecmp(args.until, act->date) >= 0) return 1;
+int satisfies(const struct arguments *args, struct action *act) {
+  if ((args->installed && act->type == INSTALL)
+    || (args->removed && act->type == REMOVE) 
+    || (args->upgraded && act->type == UPGRADE)
+    || (args->purged && act->type == PURGE)) { //if UNDEFINED will return 0
+    if (args->until.year != -1) {
+      if (datecmp(args->dat, act->date) <= 0 && datecmp(args->until, act->date) >= 0) return 1;
       else return 0;
     }
     else { //no range, only date
-      if (datecmp(args.dat, act->date) == 0) return 1;
+      if (datecmp(args->dat, act->date) == 0) return 1;
       else return 0;
     }
   }
   return 0;
 }
 
-int datecmp(struct date first, struct date second) {
+int datecmp(const struct date first, const struct date second) {
   if (first.year < 0) fprintf(stderr, "datecmp error");
   if (first.year < second.year) return -1;
   else if (first.year > second.year) return 1;

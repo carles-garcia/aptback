@@ -12,119 +12,40 @@
 #include "selection.h"
 #include "darray.h"
 #include "print_search.h"
+#include "argp_aux.h"
 
 const char *argp_program_version = "aptback v0.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] = 
 "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
-static char usage[] = "Usage: aptback search|install|remove|upgrade -s [[installed,removed,upgraded]] -d DATE [-u DATE]";
+static char usage[] = 
+"Usage: aptback [-e|-v] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
+        aptback install [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
+        aptback remove [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n";
+
 static char args_doc[] = "";
 
 static struct argp_option options[] = {
   {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
   {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
-  {"select",   	's', "OPTIONS", 0, "Select packages that were installed, removed and/or upgraded" },
-  {"yes",	'y',	0,	0, "Always call apt-get, assume Yes to all queries and do not prompt" },
+  {"select",   	's', "OPTIONS", 0, "Select packages that were installed, removed, purged and/or upgraded. OPTIONS must include at least one of the following, separated by comma: {installed,removed,purged,upgraded}" },
+  {"yes",	'y',	0,	0, "With 'install' and 'remove': always call apt-get, assume Yes to all queries and do not prompt" },
+  {"automatic",	'a',	0,	0, "Show only packages labeled automatic"},
+  {"manual",	'm',	0,	0, "Show only manually installed packages (exclude automatic)"},
+  {"export",	'e',	0,	0, "Print only package names separated by a single space. This is useful to call apt-get with the selected packages if advanced options are needed."},
+  {"export-version",	'v',	0,	0, "Print only package names and versions separated by a single space. If the selected package was upgraded, print old version. This is useful to downgrade packages with apt-get."},
   {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
   {"usage",	-1,	0,	OPTION_HIDDEN|OPTION_ALIAS, 0},
   { 0 }
 };
 
-int parse_date(char *arg, struct date *dat) {
-  if (arg == NULL || *arg == '\0') return 0;
-  char *aux = arg;
-  int c, i, field;
-  for (field = 0; field < 6; ++field) {
-    c = 0;
-    while (isdigit(*aux)) {
-      ++aux;
-      ++c;
-    }
-    if (c > 0) {
-      char buffer[c+1];
-      for (i = 0; i < c; ++i) buffer[i] = arg[i];
-      buffer[i] = '\0';
-      switch (field) {
-	case 0:
-	  dat->year = atoi(buffer);
-	  if (dat->year <= 0 || dat->year >= 3000) return 0; //range check (a bit arbitrary)
-	  break;
-	case 1:
-	  dat->month = atoi(buffer);
-	  if (dat->month < 1 || dat->month > 12) return 0;
-	  break;
-	case 2:
-	  dat->day= atoi(buffer);
-	  if (dat->day < 1 || dat->day > 31) return 0;
-	  break;
-	case 3:
-	  dat->hour= atoi(buffer);
-	  if (dat->hour < 0 || dat->hour > 24) return 0;
-	  break;
-	case 4:
-	  dat->minute = atoi(buffer);
-	  if (dat->minute < 0 || dat->minute > 59) return 0;
-	  break;
-	case 5:
-	  dat->second = atoi(buffer);
-	  if (dat->second < 0 || dat->second > 59) return 0;
-	  break;
-      }
-    }
-    else return 0;
-    
-    if (*aux == '\0') return 1;
-    else if (*aux != '-') return 0;
-  
-    ++aux;
-    arg = aux;
-  
-  }
-  return 0;
-}
-
-int parse_option(char *arg, struct arguments *arguments) {
-  char *aux = arg;
-  while (1) {
-    int c = 0;
-    while (isalpha(*aux)) {
-      ++aux;
-      ++c;
-    }
-    if (c != 0) {
-      char *buffer = malloc((c+1) * sizeof(char));
-      if (buffer == NULL) eperror("Failed to malloc at parse_option");
-      int i;
-      for (i = 0; i < c; ++i) buffer[i] = arg[i];
-      buffer[i] = '\0';
-      if (starts_with("installed", buffer)) arguments->installed = 1;
-      else if (starts_with("removed", buffer)) arguments->removed = 1;
-      else if (starts_with("upgraded", buffer)) arguments->upgraded = 1;
-      else {
-	free(buffer);
-	return 0;
-      }
-      free(buffer);
-      if (*aux == '\0') break;
-      else if (*aux != ',') return 0;
-      ++aux;
-      arg = aux;
-    }
-    else return 0;
-  }
-  return 1;
-}
-  
-  static void help(struct argp_state *state) {
+static void help(struct argp_state *state) {
   fprintf(stderr, "%s\n\n%s\n", doc, usage);
   argp_state_help(state, stderr, ARGP_HELP_LONG|ARGP_HELP_BUG_ADDR);
   exit(EXIT_FAILURE);
 }
   
-/* aptback remove -o installed,upgraded -d 2015-11-09-17-54-22 -u 2015-12-19
- * date format: 2015-11-09-17-54-22
- * minimum input is year. Then others wil be auto completed.*/
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   struct arguments *arguments = state->input;
   switch (key)
@@ -136,24 +57,40 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       if (!parse_date(arg, &arguments->until)) help(state);
       break;
     case 's':
-      if (!parse_option(arg, arguments)) help(state);
+      if (!parse_select(arg, arguments)) help(state);
       break;
     case 'y':
       arguments->yes = 1;
+      break;
+    case 'a':
+      arguments->automatic = 1;
+      break;
+    case 'm':
+      arguments->manual= 1;
+      break;
+    case 'e':
+      arguments->exp = 1;
+      break;
+    case 'v':
+      arguments->exp = 1;
+      arguments->version = 1;
       break;
     case -1:
       help(state);
       break;
     case ARGP_KEY_ARG:
-      if (strcmp(arg, "remove") == 0) arguments->command = REMOVE;
-      else if (strcmp(arg, "install") == 0) arguments->command = INSTALL;
-      else if (strcmp(arg, "upgrade") == 0) arguments->command = UPGRADE;
-      else if (strcmp(arg, "search") == 0) arguments->command = SEARCH;
+      if (strcmp(arg, "remove") == 0) arguments->option = REMOVE;
+      else if (strcmp(arg, "install") == 0) arguments->option = INSTALL;
       else help(state);
       break;
     case ARGP_KEY_END:
-      if (state->arg_num != 1) help(state);
+      if (state->arg_num == 0) arguments->option = SEARCH;
+      else if (state->arg_num != 1) help(state);
       if (arguments->dat.year == -1) help(state);
+      if (arguments->manual && arguments->automatic) {
+	fprintf(stderr, "Options -a and -m are mutually exclusive\n");
+	exit(EXIT_FAILURE);
+      }
       break;
     default:
       return ARGP_ERR_UNKNOWN;
@@ -163,12 +100,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
-void init_args(struct arguments *args) {
-  args->installed = args->removed = args->upgraded = 0;
+static void init_args(struct arguments *args) {
+  args->installed = args->removed = args->upgraded = args->purged = 0;
   args->until.year = args->until.month = args->until.day = args->until.hour = args->until.minute = args->until.second = -1;
   args->dat.year = args->dat.month = args->dat.day = args->dat.hour = args->dat.minute = args->dat.second = -1;
-  args->command = UNDEFINED;
-  args->yes = 0;
+  args->option = UNDEFINED;
+  args->yes = args->exp = args->version = args->automatic = args->manual = 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -221,7 +158,7 @@ int main(int argc, char *argv[]) {
     char *line = NULL;  
     size_t n = 0;
     while (getline(&line, &n, log_file) > 0) { 
-      evaluate_line(line, &current, &actions);
+      evaluate_line(line, &current, &actions, &args);
       free(line);
       line = NULL;
       n = 0;
@@ -242,12 +179,13 @@ int main(int argc, char *argv[]) {
   /* Actions selection based on input */
   struct darray selected;
   init_darray(&selected);
-  int total_packages = selection(args, &actions, &selected);
+  int total_packages = selection(&args, &actions, &selected);
   
   if (total_packages != 0) {
-    if (args.command == SEARCH) {
+    if (args.option == SEARCH) {
       qsort(selected.array, selected.size, sizeof(struct action *), actioncmp);
-      print_search(&selected);
+      if (args.exp) print_export(&selected, args.version);
+      else print_search(&selected);
     }
     else {
       if (!args.yes) {
@@ -268,9 +206,8 @@ int main(int argc, char *argv[]) {
       char *apt_argv[argv_size];
       int num = 0;
       apt_argv[num++] = "apt-get";
-      if (args.command == INSTALL) apt_argv[num++] = "install";
-      else if (args.command == REMOVE) apt_argv[num++] = "remove";
-      else apt_argv[num++] = "upgrade"; // should update before calling upgrade?
+      if (args.option == INSTALL) apt_argv[num++] = "install";
+      else if (args.option == REMOVE) apt_argv[num++] = "remove";
       if (args.yes) apt_argv[num++] = "--yes";
       apt_argv[argv_size-1] = NULL;
       for (int k = 0; k < selected.size; ++k) {

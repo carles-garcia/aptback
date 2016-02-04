@@ -1,7 +1,7 @@
 #include "log_parse.h"
 
 
-void copy_date(struct action *source, struct action *dest) {
+static void copy_date(const struct action *source, struct action *dest) {
   dest->date.year = source->date.year;
   dest->date.month = source->date.month;
   dest->date.day = source->date.day;
@@ -10,7 +10,21 @@ void copy_date(struct action *source, struct action *dest) {
   dest->date.second = source->date.second;
 }
 
-void evaluate_line(char *line, struct action **current, struct darray *actions) {
+static struct action *duplicate(const struct action *current) {
+  struct action *new_action = malloc(sizeof(struct action));
+  if (new_action == NULL) eperror("Failed to malloc new_action at duplicate");
+  copy_date(current, new_action);
+  if (current->command != NULL) {
+    new_action->command = malloc(strlen(current->command) * sizeof(char));
+    if (new_action->command == NULL) eperror("Failed to malloc new_action command at duplicate");
+    strcpy(new_action->command, current->command);
+  }
+  else new_action->command = NULL;
+  init_darray_pack(&(new_action->packages));
+  return new_action;
+}
+
+void evaluate_line(char *line, struct action **current, struct darray *actions, const struct arguments *args) {
   if (starts_with(line, "Start-Date")) {
     struct action *new_action = malloc(sizeof(struct action));
     if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
@@ -23,52 +37,54 @@ void evaluate_line(char *line, struct action **current, struct darray *actions) 
     get_command(line, *current);
   }
   else if (starts_with(line, "Install")) { //not all actions have one
-    (*current)->type = INSTALL; // maybe should do copy too like remove and upgrade
-    get_packages(line, *current);
+    if ((*current)->type != UNDEFINED) {
+      struct action *new_action = duplicate(*current);
+      new_action->type = INSTALL;
+      get_packages(line, new_action, args);
+      darray_add(actions, new_action);
+    }
+    else {
+      (*current)->type = INSTALL; 
+      get_packages(line, *current, args);
+    }
   }
   else if (starts_with(line, "Remove")) { //not all actions have one
     if ((*current)->type != UNDEFINED) {
-      struct action *new_action = malloc(sizeof(struct action));
-      if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
-      copy_date(*current, new_action);
-      if ((*current)->command != NULL) {
-	new_action->command = malloc(strlen((*current)->command) * sizeof(char));
-	if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
-	strcpy(new_action->command, (*current)->command);
-      }
-      else new_action->command = NULL;
+      struct action *new_action = duplicate(*current);
       new_action->type = REMOVE;
-      init_darray_pack(&(new_action->packages));
-      get_packages(line, new_action);
+      get_packages(line, new_action, args);
       darray_add(actions, new_action);
     }
     else {
       (*current)->type = REMOVE;
-      get_packages(line, *current);
+      get_packages(line, *current, args);
     }
   }
   else if (starts_with(line, "Upgrade")) { // an action can have install and upgrade at the same time
     if ((*current)->type != UNDEFINED) {
-      struct action *new_action = malloc(sizeof(struct action));
-      if (new_action == NULL) eperror("Failed to malloc new_action at evaluate_line");
-      copy_date(*current, new_action);
-      if ((*current)->command != NULL) {
-	new_action->command = malloc(strlen((*current)->command) * sizeof(char));
-	if (new_action->command == NULL) eperror("Failed to malloc new_action command at evaluate_line");
-	strcpy(new_action->command, (*current)->command);
-      }
-      else new_action->command = NULL;
+      struct action *new_action = duplicate(*current);
       new_action->type = UPGRADE;
-      init_darray_pack(&(new_action->packages));
-      get_packages(line, new_action);
+      get_packages(line, new_action, args);
       darray_add(actions, new_action);
     }
     else {
       (*current)->type = UPGRADE;
-      get_packages(line, *current);
+      get_packages(line, *current, args);
     }
   }
-  /* bad formatted lines and unrecognized options (like purge)
+  else if (starts_with(line, "Purge")) {
+    if ((*current)->type != UNDEFINED) {
+      struct action *new_action = duplicate(*current);
+      new_action->type = PURGE;
+      get_packages(line, new_action, args);
+      darray_add(actions, new_action);
+    }
+    else {
+      (*current)->type = PURGE;
+      get_packages(line, *current, args);
+    }
+  }
+  /* Bad formatted lines and unrecognized options are ignored
    *	else if (!isspace(*line) && *line != '\0')
    *	  fprintf(stderr, "Possible bad formated line\n"); // for some reason the first line is bad formated
    */
@@ -133,7 +149,13 @@ void get_command(char *line, struct action *current) {
   strcpy(current->command, line); 
 }
 
-void get_packages(char *line, struct action *current) {
+static int pack_satisfies(const struct package *new_pack, const struct arguments *args) {
+  if (args->manual && new_pack->automatic) return 0;
+  else if (args->automatic && !new_pack->automatic) return 0;
+  else return 1;
+}
+
+void get_packages(char *line, struct action *current, const struct arguments *args) {
   while (*line++ != ' '); //pass space
   while (1) {
     struct package *new_pack = malloc(sizeof(struct package));
@@ -199,7 +221,8 @@ void get_packages(char *line, struct action *current) {
     }
     
     //package finished
-    darray_pack_add(&(current->packages), new_pack);
+    if (pack_satisfies(new_pack, args))
+      darray_pack_add(&(current->packages), new_pack);
     
     line = line_aux;
     ++line; // now it's either in ' ' or in ',' or end
