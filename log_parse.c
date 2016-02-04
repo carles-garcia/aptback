@@ -149,10 +149,12 @@ void get_command(char *line, struct action *current) {
   strcpy(current->command, line); 
 }
 
-static int pack_satisfies(const struct package *new_pack, const struct arguments *args) {
-  if (args->manual && new_pack->automatic) return 0;
-  else if (args->automatic && !new_pack->automatic) return 0;
-  else return 1;
+static int pack_satisfies(const struct package *new_pack, const struct action *current, const struct arguments *args) {
+  if (current->type == INSTALL) {
+    if (args->manual && new_pack->automatic) return 0;
+    else if (args->automatic && !new_pack->automatic) return 0;
+    else return 1;
+  }
 }
 
 void get_packages(char *line, struct action *current, const struct arguments *args) {
@@ -221,7 +223,7 @@ void get_packages(char *line, struct action *current, const struct arguments *ar
     }
     
     //package finished
-    if (pack_satisfies(new_pack, args))
+    if (pack_satisfies(new_pack, current, args))
       darray_pack_add(&(current->packages), new_pack);
     
     line = line_aux;

@@ -70,7 +70,7 @@ int parse_select(char *arg, struct arguments *arguments) {
       if (starts_with("installed", buffer)) arguments->installed = 1;
       else if (starts_with("removed", buffer)) arguments->removed = 1;
       else if (starts_with("upgraded", buffer)) arguments->upgraded = 1;
-      else if (starts_with("purged", buffer)) arguments->upgraded = 1;
+      else if (starts_with("purged", buffer)) arguments->purged = 1;
       else {
 	free(buffer);
 	return 0;

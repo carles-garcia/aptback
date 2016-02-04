@@ -20,19 +20,19 @@ static char doc[] =
 "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
 static char usage[] = 
-"Usage: aptback [-e|-v] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
-       aptback install [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n\
-       aptback remove [-y] [-m|-a] -s {OPTIONS} -d DATE [-u DATE]\n";
+"Usage: aptback -s {OPTIONS} -d DATE [-u DATE] [-e|-v] [-m|-a]\n\
+       aptback install -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n\
+       aptback remove -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n";
 
 static char args_doc[] = "";
 
 static struct argp_option options[] = {
-  {"date",	'd', "DATE", 0, "Select packages in a date. DATE must be a valid date" },
-  {"until",	'u', "DATE", 0, "If date option specified, select packages from the range date:until (both included)" },
+  {"date",	'd', "DATE", 0, "Select packages matching a valid date. Format: yyyy-mm-dd-hh-mm-ss. Year is mandatory" },
+  {"until",	'u', "DATE", 0, "If date specified, select packages in the interval [date,until] (both included)" },
   {"select",   	's', "OPTIONS", 0, "Select packages that were installed, removed, purged and/or upgraded. OPTIONS must include at least one of the following, separated by comma: {installed,removed,purged,upgraded}" },
   {"yes",	'y',	0,	0, "With 'install' and 'remove': always call apt-get, assume Yes to all queries and do not prompt" },
-  {"automatic",	'a',	0,	0, "Show only packages labeled automatic"},
-  {"manual",	'm',	0,	0, "Show only manually installed packages (exclude automatic)"},
+  {"automatic",	'a',	0,	0, "Select only automatically installed packages"},
+  {"manual",	'm',	0,	0, "Select only manually installed packages (exclude automatic)"},
   {"export",	'e',	0,	0, "Print only package names separated by a single space. This is useful to call apt-get with the selected packages if advanced options are needed."},
   {"export-version",	'v',	0,	0, "Print only package names and versions separated by a single space. If the selected package was upgraded, print old version. This is useful to downgrade packages with apt-get."},
   {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
