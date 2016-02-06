@@ -155,6 +155,7 @@ static int pack_satisfies(const struct package *new_pack, const struct action *c
     else if (args->automatic && !new_pack->automatic) return 0;
     else return 1;
   }
+  return 1;
 }
 
 void get_packages(char *line, struct action *current, const struct arguments *args) {

@@ -62,7 +62,7 @@ void free_pack(struct package *pack) {
   free(pack->name);
   free(pack->arch);
   free(pack->version);
-  if (pack->newversion != NULL) free(pack->newversion);
+  free(pack->newversion);
   free(pack);
 }
 

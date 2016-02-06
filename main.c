@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
       line = NULL;
       n = 0;
     } 
-    if (line != NULL) free(line);
+    free(line);
     if (fclose(log_file) != 0) eperror("Failed to close log_file");
     if (pid != -1) {
       int status;
