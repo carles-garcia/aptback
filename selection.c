@@ -1,3 +1,8 @@
+/*
+Copyright (C) 2016  Carles Garcia Cabot  (github.com/carles-garcia)
+This file is part of aptback, a tool to search, install, remove and upgrade 
+packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
+*/
 #include "selection.h"
 
 int selection(const struct arguments *args, struct darray *actions, struct darray *selected) {
