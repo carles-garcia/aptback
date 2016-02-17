@@ -1,11 +1,10 @@
-
 CC = gcc
 CFLAGS = -g -ggdb -Wall -std=gnu99
 
 all: aptback
 
 aptback: main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
-	$(CC) $(CFLAGS) -o main.exe main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
+	$(CC) $(CFLAGS) -o aptback main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
 main.o: main.c 
 	$(CC) $(CFLAGS) -c main.c
 	
