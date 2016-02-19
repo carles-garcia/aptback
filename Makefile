@@ -1,10 +1,13 @@
 CC = gcc
 CFLAGS = -g -ggdb -Wall -std=gnu99
+CFLAGS = -g -O2 -std=gnu99
+INSTALL_PATH = /usr/local
 
 all: aptback
 
 aptback: main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
 	$(CC) $(CFLAGS) -o aptback main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
+	
 main.o: main.c 
 	$(CC) $(CFLAGS) -c main.c
 	
@@ -28,3 +31,9 @@ argp_aux.o: argp_aux.c
 	
 clean: 
 	rm main.exe main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
+	
+install: aptback
+	cp -v aptback $(INSTALL_PATH)/bin
+	
+uninstall:
+	rm $(INSTALL_PATH)/bin/aptback

@@ -1,6 +1,6 @@
 /*
  * Functions to parse apt log file
- * Includes starts_with Functions
+ * Includes starts_with function
  * It also does package selection based on package attributes
  */
 #pragma once

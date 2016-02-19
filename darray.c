@@ -13,7 +13,7 @@ void init_darray(struct darray *d) {
 }
 
 void darray_add(struct darray *d, struct action *obj) {
-  if (d->size == d->capacity) { //instead of adding obj, create it a return it?
+  if (d->size == d->capacity) { 
     d->capacity *= 2;
     d->array = realloc(d->array, d->capacity * sizeof(obj));
     if (d->array == NULL) eperror("Failed to realloc darray");
