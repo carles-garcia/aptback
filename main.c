@@ -25,7 +25,7 @@ static char doc[] =
 "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
 static char usage[] = 
-"Usage: aptback -s {OPTIONS} -d DATE [-u DATE] [-e|-v] [-m|-a]\n\
+"Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-e|-v] [-m|-a]\n\
        aptback install -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n\
        aptback remove -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n";
 
@@ -50,7 +50,8 @@ static void help(struct argp_state *state) {
   argp_state_help(state, stderr, ARGP_HELP_LONG|ARGP_HELP_BUG_ADDR);
   exit(EXIT_FAILURE);
 }
-  
+
+static int select_opt = 0;
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   struct arguments *arguments = state->input;
   switch (key)
@@ -63,6 +64,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       break;
     case 's':
       if (!parse_select(arg, arguments)) help(state);
+      select_opt = 1;
       break;
     case 'y':
       arguments->yes = 1;
@@ -89,8 +91,17 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       else help(state);
       break;
     case ARGP_KEY_END:
-      if (state->arg_num == 0) arguments->option = SEARCH;
+      if (state->arg_num == 0) {
+	arguments->option = SEARCH;
+	if (!select_opt) {
+	  arguments->installed = 1;
+	  arguments->removed = 1;
+	  arguments->upgraded = 1;
+	  arguments->purged = 1;
+	}
+      }
       else if (state->arg_num != 1) help(state);
+      else if (!select_opt) help(state);
       if (arguments->dat.year == -1) help(state);
       if (arguments->manual && arguments->automatic) {
 	fprintf(stderr, "Options -a and -m are mutually exclusive\n");

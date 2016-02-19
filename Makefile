@@ -5,17 +5,14 @@ INSTALL_PATH = /usr/local
 
 all: aptback
 
-aptback: main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
-	$(CC) $(CFLAGS) -o aptback main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
+aptback: main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
+	$(CC) $(CFLAGS) -o aptback main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
 	
 main.o: main.c 
 	$(CC) $(CFLAGS) -c main.c
 	
 log_parse.o: log_parse.c
 	$(CC) $(CFLAGS) -c log_parse.c
-	
-debug.o: debug.c
-	$(CC) $(CFLAGS) -c debug.c
 	
 selection.o: selection.c
 	$(CC) $(CFLAGS) -c selection.c
@@ -30,7 +27,7 @@ argp_aux.o: argp_aux.c
 	$(CC) $(CFLAGS) -c argp_aux.c
 	
 clean: 
-	rm main.exe main.o log_parse.o debug.o selection.o darray.o print_search.o argp_aux.o
+	rm aptback main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
 	
 install: aptback
 	cp -v aptback $(INSTALL_PATH)/bin
