@@ -13,7 +13,6 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include <sys/wait.h>
 
 #include "log_parse.h"
-#include "debug.h"
 #include "selection.h"
 #include "darray.h"
 #include "print_search.h"
