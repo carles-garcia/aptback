@@ -32,6 +32,7 @@ void print_export(struct darray *selected, int version) {
       if (version) printf("=%s", p->version);
     }
   }
+  printf("\n");
 }
 
 void print_preview(struct darray *selected) {

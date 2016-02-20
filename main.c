@@ -19,13 +19,13 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include "print_search.h"
 #include "argp_aux.h"
 
-const char *argp_program_version = "aptback v0.1";
+const char *argp_program_version = "aptback v1.0.0";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] = 
 "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
 static char usage[] = 
-"Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-e|-v] [-m|-a]\n\
+"Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-m|-a] [-e|-v]\n\
        aptback install -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n\
        aptback remove -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n";
 
