@@ -31,25 +31,34 @@ The following examples show the long and short version of the commands.
 
 ###### Install packages removed or purged in December 2015
 
-`aptback install --select removed,purged --date 2015-12`
+`sudo aptback install --select removed,purged --date 2015-12`
 
-`aptback install -s r,p -d 2015-12`
+`sudo aptback install -s r,p -d 2015-12`
 
 ###### Remove packages installed between two days (these two included)
 
-`aptback remove --select installed --date 2016-1-1 --until 2016-1-14`
+`sudo aptback remove --select installed --date 2016-1-1 --until 2016-1-14`
 
-`aptback remove -s i -d 2016-1-1 -u 2016-1-14`
+`sudo aptback remove -s i -d 2016-1-1 -u 2016-1-14`
 
 ###### Downgrade packages upgraded on a specific date
 
-`aptback --select upgraded --date 2016-2-15 --export-version | xargs apt-get install`
+```
+aptback --select upgraded --date 2016-2-15 --export-version > list 
+xargs --arg-file list sudo apt-get install
+```
 
-`aptback -s u -d 2016-2-15 -v | xargs apt-get install`
+```
+aptback -s u -d 2016-2-15 -v > list
+xargs -a list sudo apt-get install
+```
 
 ###### If you want to use advanced apt-get/apt-cache options, you can export the output of aptback and use xargs like this
 
-`aptback -s u,i -d 2016 -e | xargs apt-get purge`
+```
+aptback -s u -d 2016-2 -e > list
+xargs -a list sudo apt-get purge
+```
 
 
 #### License
