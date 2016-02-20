@@ -1,6 +1,6 @@
 # aptback
 
-[Download aptback v1.0.0](https://github.com/carles-garcia)
+[Download aptback v1.0.0](https://github.com/carles-garcia/aptback/releases/tag/v1.0.0)
 
 A tool to search, install, remove and upgrade packages logged by apt.
 
