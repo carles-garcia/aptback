@@ -33,5 +33,4 @@
 
 ignore/
 
-aptback
-debug*
+aptback_dev
