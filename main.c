@@ -19,13 +19,13 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include "print_search.h"
 #include "argp_aux.h"
 
-const char *argp_program_version = "aptback v1.0.0";
+const char *argp_program_version = "aptback v1.1.0";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] =
     "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
 
 static char usage[] =
-    "Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-m|-a] [-e|-v]\n\
+    "Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-m|-a] [-e|-v] [-t]\n\
        aptback install -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n\
        aptback remove -s {OPTIONS} -d DATE [-u DATE] [-m|-a] [-y]\n";
 
@@ -40,6 +40,7 @@ static struct argp_option options[] = {
     {"manual",	'm',	0,	0, "Select only manually installed packages (exclude automatic)"},
     {"export",	'e',	0,	0, "Print only package names separated by a single space. This is useful to call apt-get with the selected packages if advanced options are needed."},
     {"export-version",	'v',	0,	0, "Print only package names and versions separated by a single space. If the selected package was upgraded, print old version. This is useful to downgrade packages with apt-get."},
+    {"statistics",	't',	0,	0, "Print statistics"},
     {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
     {"usage",	-1,	0,	OPTION_HIDDEN|OPTION_ALIAS, 0},
     { 0 }
@@ -81,6 +82,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         arguments->exp = 1;
         arguments->version = 1;
         break;
+    case 't':
+        arguments->stats = 1;
+        break;
     case -1:
         help(state);
         break;
@@ -116,11 +120,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
 static void init_args(struct arguments *args) {
-    args->installed = args->removed = args->upgraded = args->purged = 0;
+    *args = (struct arguments){0};
     args->until.year = args->until.month = args->until.day = args->until.hour = args->until.minute = args->until.second = -1;
     args->dat.year = args->dat.month = args->dat.day = args->dat.hour = args->dat.minute = args->dat.second = -1;
     args->option = UNDEFINED;
-    args->yes = args->exp = args->version = args->automatic = args->manual = 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -194,9 +197,13 @@ int main(int argc, char *argv[]) {
     /* Actions selection based on input */
     struct darray selected;
     init_darray(&selected);
-    int total_packages = selection(&args, &actions, &selected);
+    struct statistics stats = {0};
+    selection(&args, &actions, &selected, &stats);
 
-    if (total_packages != 0) {
+    if (stats.num_selected != 0) {
+        if (args.stats) {
+            print_stats(&stats);
+        }
         if (args.option == SEARCH) {
             qsort(selected.array, selected.size, sizeof(struct action *), actioncmp);
             if (args.exp) print_export(&selected, args.version);
@@ -204,7 +211,7 @@ int main(int argc, char *argv[]) {
         }
         else {
             if (!args.yes) {
-                printf("%d packages selected:\n", total_packages);
+                printf("%d packages selected:\n", stats.num_selected);
                 print_preview(&selected);
                 char input = 0;
                 do {
@@ -216,9 +223,9 @@ int main(int argc, char *argv[]) {
             }
 
             /* Apt-get call */ // should ask for confirmation before calling apt if action is install
-            int argv_size = total_packages + 2 + 1;  // +2 for the first 2, +1 for the last NULL
+            int argv_size = stats.num_selected + 2 + 1;  // +2 for the first 2, +1 for the last NULL
             if (args.yes) ++argv_size;
-            char *apt_argv[argv_size] = {0};
+            char *apt_argv[argv_size];
             int num = 0;
             apt_argv[num++] = "apt-get";
             if (args.option == INSTALL) apt_argv[num++] = "install";

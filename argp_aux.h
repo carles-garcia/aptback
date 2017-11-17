@@ -1,6 +1,6 @@
 /*
  * Auxiliar functions to parse arguments
- * 
+ *
  */
 #pragma once
 

@@ -49,3 +49,13 @@ void print_preview(struct darray *selected) {
     }
     printf("\n\n");
 }
+
+void print_stats(struct statistics *stats) {
+    printf("Statistics: ");
+    printf("%d total ", stats->num_selected);
+    printf("%d installed ", stats->num_packages[INSTALL]);
+    printf("%d upgraded ", stats->num_packages[UPGRADE]);
+    printf("%d removed ", stats->num_packages[REMOVE]);
+    printf("%d purged ", stats->num_packages[PURGE]);
+    printf("\n");
+}

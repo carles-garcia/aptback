@@ -5,6 +5,7 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 */
 #include "darray.h"
 
+
 void init_darray(struct darray *d) {
     d->size = 0;
     d->capacity = 10;

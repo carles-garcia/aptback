@@ -1,7 +1,7 @@
 /*
  * Functions to select actions based on arguments
  * Includes actioncmp function for qsort
- * 
+ *
  */
 #pragma once
 
@@ -9,8 +9,10 @@
 
 #include "darray.h"
 
-
-int selection(const struct arguments *args, struct darray *actions, struct darray *selected);
+/*
+ * stats: should be initialized
+ */
+void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats);
 
 int satisfies(const struct arguments *args, struct action *act);
 

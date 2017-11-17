@@ -33,4 +33,5 @@
 
 ignore/
 
-aptback_dev
+aptback*
+*.orig

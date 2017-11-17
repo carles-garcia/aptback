@@ -1,7 +1,7 @@
 /*
  * Type definitions and related functions.
  * Includes eperror function
- * 
+ *
  */
 #pragma once
 
@@ -9,55 +9,65 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
 struct date {
-  int year;
-  int month;
-  int day;
-  int hour;
-  int minute;
-  int second;
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
 };
 
-enum action_type { INSTALL, REMOVE, UPGRADE, PURGE, SEARCH, UNDEFINED }; 
+enum action_type { INSTALL, REMOVE, UPGRADE, PURGE, SEARCH, UNDEFINED, ENUM_ACTION_SIZE };
+
+struct statistics {
+    unsigned int num_packages[ENUM_ACTION_SIZE];
+    unsigned int num_selected;
+    unsigned int num_total;
+};
+
 
 struct arguments {
-  struct date dat, until;
-  enum action_type option;
-  int installed;
-  int upgraded;
-  int removed;
-  int purged;
-  int yes;
-  int automatic;
-  int manual;
-  int exp;
-  int version;
+    struct date dat, until;
+    enum action_type option;
+    int installed;
+    int upgraded;
+    int removed;
+    int purged;
+    int yes;
+    int automatic;
+    int manual;
+    int exp;
+    int version;
+    int stats;
 };
 
 struct package {
-  char *name;
-  char *arch;
-  char *version;
-  char *newversion; // Only for UPGRADE
-  int automatic; // Only for INSTALL
-};	
+    char *name;
+    char *arch;
+    char *version;
+    char *newversion; // Only for UPGRADE
+    int automatic; // Only for INSTALL
+};
 
 struct darray_pack {
-  int size, capacity;
-  struct package **array; //no the same as *array[]
+    int size, capacity;
+    struct package **array; //no the same as *array[]
 };
 
 struct action {
-  // start date (end date is ignored when parsing, not useful. Also, start date of installing, not downloading). 
-  struct date date; 
-  char *command;
-  struct darray_pack packages;
-  enum action_type type;
+    // start date (end date is ignored when parsing, not useful. Also, start date of installing, not downloading).
+    struct date date;
+    char *command;
+    struct darray_pack packages;
+    enum action_type type;
 };
 
 struct darray {
-  int size, capacity;
-  struct action **array;
+    int size, capacity;
+    struct action **array;
 };
 
 void init_darray(struct darray *d);

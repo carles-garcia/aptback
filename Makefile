@@ -1,11 +1,12 @@
 CC = gcc
-CFLAGS = -g -ggdb -Wall -std=gnu11
+CFLAGS = -g -ggdb -Wall  -pedantic -std=gnu11
 INSTALL_PATH = /usr/local
+EXE_NAME = aptback_dev
 
 all: aptback
 
 aptback: main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
-	$(CC) $(CFLAGS) -o aptback_dev main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
+	$(CC) $(CFLAGS) -o $(EXE_NAME) main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
 	
 main.o: main.c 
 	$(CC) $(CFLAGS) -c main.c
@@ -26,10 +27,10 @@ argp_aux.o: argp_aux.c
 	$(CC) $(CFLAGS) -c argp_aux.c
 	
 clean: 
-	rm aptback main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
+	rm $(EXE_NAME) main.o log_parse.o selection.o darray.o print_search.o argp_aux.o
 	
 install: aptback
-	cp -v aptback_dev $(INSTALL_PATH)/bin
+	cp -v $(EXE_NAME) $(INSTALL_PATH)/bin
 	
 uninstall:
-	rm $(INSTALL_PATH)/bin/aptback_dev
+	rm $(INSTALL_PATH)/bin/$(EXE_NAME)

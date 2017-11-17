@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <stdio.h> 
+#include <stdio.h>
 
 #include "darray.h"
 #include "debug.h"

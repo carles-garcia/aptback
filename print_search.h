@@ -1,6 +1,6 @@
 /*
  * Functions to print search results
- * 
+ *
  */
 #pragma once
 
@@ -13,3 +13,5 @@ void print_search(struct darray *selected);
 void print_export(struct darray *selected, int version);
 
 void print_preview(struct darray *selected);
+
+void print_stats(struct statistics *stats);
