@@ -9,7 +9,7 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 void init_darray(struct darray *d) {
     d->size = 0;
     d->capacity = 10;
-    d->array = malloc(10 * sizeof(struct action*));
+    d->array = malloc(10 * sizeof(struct action*)); //calloc?
     if (d->array == NULL) eperror("Failed to malloc darray");
 }
 
@@ -58,6 +58,7 @@ void free_darray_pack(struct darray_pack *d) {
 
 void free_action(struct action *actions) {
     free(actions->command);
+    free(actions->user);
     for (int j = 0; j < actions->packages.size; ++j)
         free_pack(darray_pack_get(&actions->packages, j));
     free_darray_pack(&actions->packages);
@@ -77,6 +78,7 @@ void init_action(struct action *current) {
     init_darray_pack(&(current->packages));
     current->command = NULL;
     current->type = UNDEFINED;
+    current->user = NULL;
 }
 
 void init_pack(struct package *pack) {

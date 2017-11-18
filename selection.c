@@ -5,13 +5,18 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 */
 #include "selection.h"
 
-void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats) {
+void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats, int *user_len) {
     for (int i = 0; i < actions->size; ++i) {
-        if (satisfies(args, darray_get(actions, i))) {
-            darray_add(selected, darray_get(actions, i));
-            int aux_size = darray_get(actions, i)->packages.size;
+        struct action *act = darray_get(actions, i);
+        if (satisfies(args, act)) {
+            darray_add(selected, act);
+            int aux_size = act->packages.size;
             stats->num_selected += aux_size;
-            stats->num_packages[darray_get(actions, i)->type] += aux_size;
+            stats->num_packages[act->type] += aux_size;
+            if (act->user) {
+                int aux_len = strlen(act->user);
+                *user_len = aux_len > *user_len ? aux_len : *user_len;
+            }
         }
     }
 }

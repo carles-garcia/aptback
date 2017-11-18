@@ -19,7 +19,7 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include "print_search.h"
 #include "argp_aux.h"
 
-const char *argp_program_version = "aptback v1.1.0";
+const char *argp_program_version = "aptback v1.1.0beta";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] =
     "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
@@ -41,6 +41,7 @@ static struct argp_option options[] = {
     {"export",	'e',	0,	0, "Print only package names separated by a single space. This is useful to call apt-get with the selected packages if advanced options are needed."},
     {"export-version",	'v',	0,	0, "Print only package names and versions separated by a single space. If the selected package was upgraded, print old version. This is useful to downgrade packages with apt-get."},
     {"statistics",	't',	0,	0, "Print statistics"},
+    {"user",	'r',	0,	0, "Print user that requested action"},
     {"help",	-1,	0,	OPTION_HIDDEN, "Print help message"},
     {"usage",	-1,	0,	OPTION_HIDDEN|OPTION_ALIAS, 0},
     { 0 }
@@ -84,6 +85,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         break;
     case 't':
         arguments->stats = 1;
+        break;
+    case 'r':
+        arguments->user = 1;
         break;
     case -1:
         help(state);
@@ -198,16 +202,16 @@ int main(int argc, char *argv[]) {
     struct darray selected;
     init_darray(&selected);
     struct statistics stats = {0};
-    selection(&args, &actions, &selected, &stats);
-
-    if (stats.num_selected != 0) {
+    int user_len = 0;
+    selection(&args, &actions, &selected, &stats, &user_len);
+    if (stats.num_selected > 0) {
         if (args.stats) {
             print_stats(&stats);
         }
         if (args.option == SEARCH) {
             qsort(selected.array, selected.size, sizeof(struct action *), actioncmp);
             if (args.exp) print_export(&selected, args.version);
-            else print_search(&selected);
+            else print_search(&selected, args.user, user_len);
         }
         else {
             if (!args.yes) {

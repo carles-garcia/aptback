@@ -12,7 +12,7 @@
 /*
  * stats: should be initialized
  */
-void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats);
+void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats, int *user_len);
 
 int satisfies(const struct arguments *args, struct action *act);
 

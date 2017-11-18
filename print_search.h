@@ -8,7 +8,7 @@
 
 #include "darray.h"
 
-void print_search(struct darray *selected);
+void print_search(struct darray *selected, int user, int user_len);
 
 void print_export(struct darray *selected, int version);
 

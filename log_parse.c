@@ -25,6 +25,12 @@ static struct action *duplicate(const struct action *current) {
         strcpy(new_action->command, current->command);
     }
     else new_action->command = NULL;
+    if (current->user != NULL) {
+        new_action->user = malloc((strlen(current->user) + 1) * sizeof(char));
+        if (new_action->command == NULL) eperror("Failed to malloc new_action user at duplicate");
+        strcpy(new_action->user, current->user);
+    }
+    else new_action->command = NULL;
     init_darray_pack(&(new_action->packages));
     return new_action;
 }
@@ -40,6 +46,9 @@ void evaluate_line(char *line, struct action **current, struct darray *actions, 
     }
     else if (starts_with(line, "Commandline")) { //not all actions have one
         get_command(line, *current);
+    }
+    else if (starts_with(line, "Requested-By")) { //do all actions have one?
+        get_user(line, *current);
     }
     else if (starts_with(line, "Install")) { //not all actions have one
         if ((*current)->type != UNDEFINED) {
@@ -152,6 +161,20 @@ void get_command(char *line, struct action *current) {
     current->command = malloc((strlen(line)+1) * sizeof(char)); //will free when exiting program
     if (current->command == NULL) eperror("Failed to malloc command at get_command");
     strcpy(current->command, line);
+}
+
+void get_user(char *line, struct action *current) {
+    while (!isspace(*line++));
+    while (isspace(*line)) ++line;
+    // now we have the user
+    current->user = malloc((strlen(line)+1) * sizeof(char)); //will free when exiting program
+    if (current->user == NULL) eperror("Failed to malloc user at get_user");
+    char *aux = current->user;
+    while (*line != ')') {
+        *aux++ = *line++;
+    }
+    *aux++ = ')';
+    *aux = '\0';
 }
 
 static int pack_satisfies(const struct package *new_pack, const struct action *current, const struct arguments *args) {

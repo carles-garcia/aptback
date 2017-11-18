@@ -22,5 +22,7 @@ void get_date(char *line, struct date *dat);
 
 void get_command(char *line, struct action *current);
 
+void get_user(char *line, struct action *current); 
+
 void get_packages(char *line, struct action *current, const struct arguments *args);
 

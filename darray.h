@@ -42,6 +42,7 @@ struct arguments {
     int exp;
     int version;
     int stats;
+    int user;
 };
 
 struct package {
@@ -63,10 +64,11 @@ struct action {
     char *command;
     struct darray_pack packages;
     enum action_type type;
+    char *user;
 };
 
 struct darray {
-    int size, capacity;
+    size_t size, capacity;
     struct action **array;
 };
 
