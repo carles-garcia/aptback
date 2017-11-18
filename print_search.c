@@ -7,13 +7,13 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 
 void print_search(struct darray *selected, int user, int user_len) {
     for (int i = 0; i < selected->size; ++i) {
-        struct action *a = darray_get(selected, i);
+        struct action *a = selected->data[i];
         for (int j = 0; j < a->packages.size; ++j) {
-            struct package *p = darray_pack_get(&a->packages, j);
+            struct package *p = a->packages.data[j];
             if (user) {
                 if (a->user) printf("%*s  ", user_len, a->user);
                 else printf("%*s  ", user_len, "");
-            } // we could write exact size by tracking max size of user while parsing
+            } 
             printf("%d-%02d-%02d  %02d:%02d", a->date.year, a->date.month, a->date.day, a->date.hour, a->date.minute);
             if (a->type == INSTALL) printf("  install");
             else if (a->type == REMOVE) printf("  remove ");
@@ -29,9 +29,9 @@ void print_search(struct darray *selected, int user, int user_len) {
 
 void print_export(struct darray *selected, int version) {
     for (int i = 0; i < selected->size; ++i) {
-        struct action *a = darray_get(selected, i);
+        struct action *a = selected->data[i];
         for (int j = 0; j < a->packages.size; ++j) {
-            struct package *p = darray_pack_get(&a->packages, j);
+            struct package *p = a->packages.data[j];
             printf(" %s", p->name);
             if (version) printf("=%s", p->version);
         }
@@ -41,9 +41,9 @@ void print_export(struct darray *selected, int version) {
 
 void print_preview(struct darray *selected) {
     for (int i = 0, k = 0; i < selected->size; ++i) {
-        struct action *a = darray_get(selected, i);
+        struct action *a = selected->data[i];
         for (int j = 0; j < a->packages.size; ++j, ++k) {
-            struct package *p = darray_pack_get(&a->packages, j);
+            struct package *p = a->packages.data[j];
             printf("%s ", p->name);
             if (k == 5) {
                 k = 0;

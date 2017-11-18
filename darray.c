@@ -5,77 +5,50 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 */
 #include "darray.h"
 
-
-void init_darray(struct darray *d) {
+void init_darray(struct darray *d, void (*free_f)(void*)) {
     d->size = 0;
-    d->capacity = 10;
-    d->array = malloc(10 * sizeof(struct action*)); //calloc?
-    if (d->array == NULL) eperror("Failed to malloc darray");
+    d->capacity = 16;
+    d->data = malloc(16 * sizeof(void*)); //calloc?
+    if (d->data == NULL) eperror("Failed to malloc darray");
+    d->free_f = free_f;
 }
 
-void darray_add(struct darray *d, struct action *obj) {
+void darray_add(struct darray *d, void *obj) {
     if (d->size == d->capacity) {
         d->capacity *= 2;
-        d->array = realloc(d->array, d->capacity * sizeof(obj));
-        if (d->array == NULL) eperror("Failed to realloc darray");
+        d->data = realloc(d->data, d->capacity * sizeof(void*));
+        if (d->data == NULL) eperror("Failed to realloc darray");
     }
-    d->array[d->size++] = obj;
-}
-
-struct action* darray_get(struct darray *d, int i) {
-    return d->array[i];
+    d->data[d->size++] = obj;
 }
 
 void free_darray(struct darray *d) {
-    free(d->array);
-}
-
-
-void init_darray_pack(struct darray_pack *d) {
-    d->size = 0;
-    d->capacity = 10;
-    d->array = malloc(10 * sizeof(struct package*));
-    if (d->array == NULL) eperror("Failed to malloc darray");
-}
-
-void darray_pack_add(struct darray_pack *d, struct package *obj) {
-    if (d->size == d->capacity) {
-        d->capacity *= 2;
-        d->array = realloc(d->array, d->capacity * sizeof(obj));
-        if (d->array == NULL) eperror("Failed to realloc darray");
+    for (size_t i = 0; i < d->size; ++i) {
+        d->free_f(d->data[i]);
     }
-    d->array[d->size++] = obj;
 }
 
-struct package* darray_pack_get(struct darray_pack *d, int i) {
-    return d->array[i];
+void free_action(void *act) {
+    struct action *a = act;
+    free(a->command);
+    free(a->user);  
+    free_darray(&a->packages);
+    free(a);
 }
 
-void free_darray_pack(struct darray_pack *d) {
-    free(d->array);
-}
-
-
-void free_action(struct action *actions) {
-    free(actions->command);
-    free(actions->user);
-    for (int j = 0; j < actions->packages.size; ++j)
-        free_pack(darray_pack_get(&actions->packages, j));
-    free_darray_pack(&actions->packages);
-    free(actions);
-}
-
-void free_pack(struct package *pack) {
-    free(pack->name);
-    free(pack->arch);
-    free(pack->version);
-    free(pack->newversion);
-    free(pack);
+void free_pack(void *pack) {
+    struct package *p = pack;
+    free(p->name);
+    free(p->arch);
+    free(p->version);
+    free(p->newversion);
+    free(p);
 }
 
 void init_action(struct action *current) {
-    memset(&current->date, 0, sizeof(struct date));
-    init_darray_pack(&(current->packages));
+    //memset(&current->date, 0, sizeof(struct date));
+    current->date = (struct date){0};
+    init_darray(&current->packages, &free_pack);
     current->command = NULL;
     current->type = UNDEFINED;
     current->user = NULL;

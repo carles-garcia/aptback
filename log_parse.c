@@ -31,7 +31,7 @@ static struct action *duplicate(const struct action *current) {
         strcpy(new_action->user, current->user);
     }
     else new_action->command = NULL;
-    init_darray_pack(&(new_action->packages));
+    init_darray(&new_action->packages, &free_pack);
     return new_action;
 }
 
@@ -253,7 +253,7 @@ void get_packages(char *line, struct action *current, const struct arguments *ar
 
         //package finished
         if (pack_satisfies(new_pack, current, args))
-            darray_pack_add(&(current->packages), new_pack);
+            darray_add(&current->packages, new_pack);
 
         line = line_aux;
         ++line; // now it's either in ' ' or in ',' or end

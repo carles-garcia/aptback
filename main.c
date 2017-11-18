@@ -19,7 +19,7 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include "print_search.h"
 #include "argp_aux.h"
 
-const char *argp_program_version = "aptback v1.1.0beta";
+const char *argp_program_version = "aptback v1.1.0-beta.2";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] =
     "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 
     /* Apt-log search and processing */
     struct darray actions;
-    init_darray(&actions);
+    init_darray(&actions, &free_action);
     DIR *apt_dir = NULL;
     struct dirent *in_file = NULL;
     FILE *log_file = NULL;
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
 
     /* Actions selection based on input */
     struct darray selected;
-    init_darray(&selected);
+    init_darray(&selected, &free_action);
     struct statistics stats = {0};
     int user_len = 0;
     selection(&args, &actions, &selected, &stats, &user_len);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
             print_stats(&stats);
         }
         if (args.option == SEARCH) {
-            qsort(selected.array, selected.size, sizeof(struct action *), actioncmp);
+            qsort(selected.data, selected.size, sizeof(struct action *), actioncmp);
             if (args.exp) print_export(&selected, args.version);
             else print_search(&selected, args.user, user_len);
         }
@@ -237,8 +237,10 @@ int main(int argc, char *argv[]) {
             if (args.yes) apt_argv[num++] = "--yes";
             apt_argv[argv_size-1] = NULL;
             for (int k = 0; k < selected.size; ++k) {
-                for (int l = 0; l < darray_get(&selected, k)->packages.size; ++l) {
-                    apt_argv[num++] = darray_pack_get(&(darray_get(&selected, k)->packages), l)->name;
+                struct action *act_aux = selected.data[k];
+                for (int l = 0; l < act_aux->packages.size; ++l) {
+                    struct package *pack_aux = act_aux->packages.data[l];
+                    apt_argv[num++] = pack_aux->name;
                 }
             }
             int pid = fork();
@@ -259,10 +261,8 @@ int main(int argc, char *argv[]) {
     else printf("No packages match the arguments\n");
 
     /* Free allocated memory left */
-    for (int i = 0; i < actions.size; ++i)
-        free_action(darray_get(&actions, i));
     free_darray(&actions);
-    free_darray(&selected);
+    //free_darray(&selected);
 
     return 0;
 }

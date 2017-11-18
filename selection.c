@@ -6,8 +6,8 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include "selection.h"
 
 void selection(const struct arguments *args, struct darray *actions, struct darray *selected, struct statistics *stats, int *user_len) {
-    for (int i = 0; i < actions->size; ++i) {
-        struct action *act = darray_get(actions, i);
+    for (size_t i = 0; i < actions->size; ++i) {
+        struct action *act = actions->data[i];
         if (satisfies(args, act)) {
             darray_add(selected, act);
             int aux_size = act->packages.size;
@@ -71,8 +71,8 @@ int datecmp(const struct date first, const struct date second) {
 }
 
 int actioncmp(const void *a, const void *b) {
-    const struct action *act1 = *(const struct action **)a;
-    const struct action *act2 = *(const struct action **)b;
-    return datecmp(act1->date, act2->date);
+    const struct action *const *act1 = a;
+    const struct action *const *act2 = b;
+    return datecmp((*act1)->date, (*act2)->date);
 }
 

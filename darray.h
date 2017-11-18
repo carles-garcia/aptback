@@ -28,7 +28,6 @@ struct statistics {
     unsigned int num_total;
 };
 
-
 struct arguments {
     struct date dat, until;
     enum action_type option;
@@ -45,6 +44,13 @@ struct arguments {
     int user;
 };
 
+struct darray {
+    size_t size;
+    size_t capacity;
+    void **data;
+    void (*free_f)(void*); // pointer to function that can free data content
+};
+
 struct package {
     char *name;
     char *arch;
@@ -53,48 +59,29 @@ struct package {
     int automatic; // Only for INSTALL
 };
 
-struct darray_pack {
-    int size, capacity;
-    struct package **array; //no the same as *array[]
-};
-
 struct action {
     // start date (end date is ignored when parsing, not useful. Also, start date of installing, not downloading).
     struct date date;
     char *command;
-    struct darray_pack packages;
+    struct darray packages;
     enum action_type type;
     char *user;
 };
 
-struct darray {
-    size_t size, capacity;
-    struct action **array;
-};
 
-void init_darray(struct darray *d);
 
-void darray_add(struct darray *d, struct action *obj);
 
-struct action* darray_get(struct darray *d, int i);
+void init_darray(struct darray *d, void (*free_f)(void*));
+
+void darray_add(struct darray *d, void *obj);
 
 void free_darray(struct darray *d);
 
 
 
-void init_darray_pack(struct darray_pack *d);
+void free_action(void *actions);
 
-void darray_pack_add(struct darray_pack *d, struct package *obj);
-
-struct package* darray_pack_get(struct darray_pack *d, int i);
-
-void free_darray_pack(struct darray_pack *d);
-
-
-
-void free_action(struct action *actions);
-
-void free_pack(struct package *pack);
+void free_pack(void *pack);
 
 void init_action(struct action *current);
 
