@@ -1,10 +1,10 @@
 # aptback
 
-[Download aptback v1.0.0](https://github.com/carles-garcia/aptback/releases/tag/v1.0.0)
+[Download aptback v1.1](https://github.com/carles-garcia/aptback/releases/tag/v1.1)
 
 A tool to search, install, remove and upgrade packages logged by apt.
 
-aptback can show the apt log in a easy to read format and sorted by date.
+aptback can show the apt log in an easy to read format and sorted by date.
 
 
 #### Install
