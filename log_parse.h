@@ -11,7 +11,6 @@
 #include <stdio.h>
 
 #include "darray.h"
-#include "debug.h"
 
 
 void evaluate_line(char *line, struct action **current, struct darray *actions, const struct arguments *args);

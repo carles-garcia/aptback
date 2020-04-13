@@ -13,7 +13,6 @@ packages logged by apt. Released under the GNU GPLv3 (see COPYING.txt)
 #include <sys/wait.h>
 
 #include "log_parse.h"
-#include "debug.h"
 #include "selection.h"
 #include "darray.h"
 #include "print_search.h"
@@ -23,6 +22,7 @@ const char *argp_program_version = "aptback v1.1";
 const char *argp_program_bug_address = "https://github.com/carles-garcia/aptback/issues";
 static char doc[] =
     "aptback -- a tool to search, install, remove and upgrade packages logged by apt";
+
 
 static char usage[] =
     "Usage: aptback [-s {OPTIONS}] -d DATE [-u DATE] [-m|-a] [-e|-v] [-t]\n\
