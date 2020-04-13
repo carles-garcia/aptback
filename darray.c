@@ -23,9 +23,10 @@ void darray_add(struct darray *d, void *obj) {
 }
 
 void free_darray(struct darray *d) {
-    for (size_t i = 0; i < d->size; ++i) {
+    for (size_t i = 0; i < d->size; i += sizeof(void*)) {
         d->free_f(d->data[i]);
     }
+    free(d->data);
 }
 
 void free_action(void *act) {

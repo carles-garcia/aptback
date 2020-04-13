@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -g -ggdb -Wall  -pedantic -std=gnu11
 INSTALL_PATH = /usr/local
-EXE_NAME = aptback_dev
+EXE_NAME = aptback
 
 all: aptback
 
